@@ -13,6 +13,9 @@ policy_types:
         type: string
         required: true
         default: deployment
+      target_ports:
+        type: list
+        required: true
 
   tosca.policies.MiCADO.Security.Network.Passthrough:
     derived_from: tosca.policies.MiCADO.Security.Network
@@ -224,8 +227,8 @@ policy_types:
         constraints:
           - valid_values: ["accept", "drop", "abort"]
         required: false
-      target_port_range:
-        type: string
+      non_transparent_ports:
+        type: list
         description: List of ports that non transparent requests may use
         required: false
       strict_header_checking:
