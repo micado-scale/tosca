@@ -10,51 +10,6 @@ relationship_types:
         description: Name of Docker network to connect containers over
         required: true
 
-policy_types:
-  ## Base policy types for Policykeeper
-  tosca.policies.Scaling.MiCADO:
-    derived_from: tosca.policies.Scaling
-    description: base MiCADO policy defining data sources, constants, queries, alerts, limits and rules
-    properties:
-      sources:
-        type: list
-        description: list of prometheus exporters as data sources
-        required: false
-      constants:
-        type: map
-        description: list of constants referred in other sections
-        required: false
-      alerts:
-        type: list
-        description: list of prometheus alerts
-        required: false
-      queries:
-        type: map
-        description: list of variables and their associated prometheus query
-        required: false
-      stage:
-        type: string
-        description: the stage that will be affected by the policy (not yet implemented)
-        default: started
-        required: false
-      priority:
-        type: integer
-        description: the priority with which the policy will be exectued (not yet implemented)
-        default: 100
-        required: false
-      min_instances:
-        type: integer
-        required: true
-        description: defines the min instances to scale to
-      max_instances:
-        type: integer
-        required: true
-        description: defines the max instances to scale to
-      scaling_rule:
-        type: string
-        description: python code to define scaling rule
-        required: true
-
 capability_types:
   ## capabilty types for Docker
   tosca.capabilities.MiCADO.Container.Docker:
@@ -93,12 +48,24 @@ capability_types:
   tosca.capabilities.MiCADO.Occopus.CloudSigma.Cloud:
     derived_from: tosca.capabilities.Container
     properties:
+      num_cpus:
+        type: integer
+        required: true
+        constraints:
+          - greater_or_equal: 250
+          - less_or_equal: 100000
+      mem_size:
+        type: integer
+        required: true
+        constraints:
+          - greater_or_equal: 268435456
+          - less_or_equal: 137438953472
       libdrive_id:
         type: string
         required: true
       vnc_password:
         type: string
-        required: false
+        required: true
       host_name:
         type: string
         required: false
@@ -120,7 +87,7 @@ capability_types:
       image_id:
         type: string
         required: true
-      flavour_name:
+      flavor_name:
         type: string
         required: true
       tenant_name:
@@ -128,13 +95,13 @@ capability_types:
         required: false
       project_id:
         type: string
-        required: false
+        required: true
       user_domain_name:
         type: string
         required: false
       network_id:
         type: string
-        required: false
+        required: true
       server_name:
         type: string
         required: false
@@ -142,7 +109,7 @@ capability_types:
         type: string
         required: false
       security_groups:
-        type: string
+        type: list
         required: false
       floating_ip:
         type: string
@@ -427,3 +394,49 @@ node_types:
           capability: tosca.capabilities.Attachment
           node: tosca.nodes.MiCADO.Volume.Docker
           relationship: tosca.relationships.AttachesTo
+
+policy_types:
+
+  tosca.policies.Scaling.MiCADO:
+    derived_from: tosca.policies.Scaling
+    description: base MiCADO policy defining data sources, constants, queries, alerts, limits and rules
+    properties:
+      sources:
+        type: list
+        description: list of prometheus exporters as data sources
+        required: false
+      constants:
+        type: map
+        description: list of constants referred in other sections
+        required: false
+      alerts:
+        type: list
+        description: list of prometheus alerts
+        required: false
+      queries:
+        type: map
+        description: list of variables and their associated prometheus query
+        required: false
+      stage:
+        type: string
+        description: the stage that will be affected by the policy (not yet implemented)
+        default: started
+        required: false
+      priority:
+        type: integer
+        description: the priority with which the policy will be exectued (not yet implemented)
+        default: 100
+        required: false
+      min_instances:
+        type: integer
+        required: true
+        description: defines the min instances to scale to
+      max_instances:
+        type: integer
+        required: true
+        description: defines the max instances to scale to
+      scaling_rule:
+        type: string
+        description: python code to define scaling rule
+        required: true
+
