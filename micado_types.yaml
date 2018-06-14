@@ -66,13 +66,13 @@ capability_types:
       vnc_password:
         type: string
         required: true
-      host_name:
-        type: string
-        required: false
       public_key_id:
         type: string
-        required: false
+        required: true
       firewall_policy:
+        type: string
+        required: true
+      host_name:
         type: string
         required: false
       description:
