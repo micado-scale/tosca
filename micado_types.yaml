@@ -71,7 +71,7 @@ capability_types:
         required: true
       firewall_policy:
         type: string
-        required: true
+        required: false
       host_name:
         type: string
         required: false
