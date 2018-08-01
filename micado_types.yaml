@@ -37,7 +37,7 @@ capability_types:
       key_name:
         type: string
         required: false
-      security_group_ids:
+      security_groups_ids:
         type: list
         required: false
       subnet_id:
