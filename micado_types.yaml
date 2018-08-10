@@ -320,6 +320,10 @@ node_types:
         type: string
         description: network driver
         required: false
+      driver_opts:
+        type: map
+        description: network driver options (incl. mtu)
+        required: false      
       ip_version:
         type: integer
         required: false
