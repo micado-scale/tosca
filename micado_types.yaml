@@ -354,6 +354,10 @@ node_types:
         type: string
         description: docker image, prefixed by repository if private
         required: false
+      stop_grace_period:
+        type: string
+        description: time to wait to stop a container
+        required: false
       labels:
         required: false
         type: map
