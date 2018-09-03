@@ -379,6 +379,9 @@ node_types:
       secrets:
         type: list
         required: false
+      tty:
+        type: boolean
+        required: false
 
     attributes:
       ip_address:
