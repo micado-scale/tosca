@@ -179,6 +179,9 @@ data_types:
         required: false
   deploy_type:
     properties:
+      mode:
+        type: string
+        required: false
       replicas:
         type: integer
         required: false
