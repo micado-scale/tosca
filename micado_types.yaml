@@ -101,7 +101,6 @@ interface_types:
       description: Orchestrate with Kubernetes       
 
 node_types:
-
   ##
   ## Virtualmachine-level node type definitions
   ##
