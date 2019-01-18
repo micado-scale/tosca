@@ -92,9 +92,11 @@ interface_types:
   tosca.interfaces.MiCADO.Kubernetes:
     derived_from: tosca.interfaces.node.lifecycle.Standard
     description: Interface for container orchestration with Kubernetes
+    deploy:
+      type: map
     inputs:
       xxx:
-        type: string
+        type: map
       zzz:
         type: string
     create:
@@ -293,6 +295,9 @@ node_types:
     capabilities:
       volume:
         type: tosca.capabilities.Attachment
+    interfaces:
+      Kubernetes:
+        type: tosca.interfaces.MiCADO.Kubernetes
 
   tosca.nodes.MiCADO.Container.Application.Docker:
     derived_from: tosca.nodes.Container.Application.Docker
