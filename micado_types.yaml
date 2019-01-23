@@ -79,6 +79,9 @@ capability_types:
         type: string
         required: false
         description: overrides the capability type
+      nics:
+        type: list
+        required: false
 
   ## capabilty types for Nova
   tosca.capabilities.MiCADO.Occopus.Nova.Cloud:
