@@ -31,7 +31,7 @@ interface_types:
         required: false
     create:
       description: Create a compute node with Terraform
-  
+
   ##
   ## Container-level interface type definitions
   ##
@@ -67,7 +67,7 @@ interface_types:
         required: false
       labels:
         type: map
-        description: labels        
+        description: labels
         required: false
         entry_schema:
           type: string
@@ -92,15 +92,8 @@ interface_types:
   tosca.interfaces.MiCADO.Kubernetes:
     derived_from: tosca.interfaces.node.lifecycle.Standard
     description: Interface for container orchestration with Kubernetes
-    deploy:
-      type: map
-    inputs:
-      xxx:
-        type: map
-      zzz:
-        type: string
     create:
-      description: Orchestrate with Kubernetes       
+      description: Orchestrate with Kubernetes
 
 node_types:
   ##
@@ -266,7 +259,7 @@ node_types:
       driver_opts:
         type: map
         description: network driver options (incl. mtu)
-        required: false      
+        required: false
       ip_version:
         type: integer
         required: false
@@ -289,13 +282,15 @@ node_types:
         description: map of metadata labels
         required: false
       size:
-        type: scalar.unit-size
+        type: string
         description: overwrite size requirement
         required: false
     capabilities:
       volume:
         type: tosca.capabilities.Attachment
     interfaces:
+      Swarm:
+        type: tosca.interfaces.MiCADO.Swarm
       Kubernetes:
         type: tosca.interfaces.MiCADO.Kubernetes
 
@@ -307,27 +302,13 @@ node_types:
         type: list
         description: ports to be forwarded
         required: false
-      command:
+      clusterIP:
         type: string
-        description: arguments to be passed to the entrypoint
+        description: ip (Kubernetes style)
         required: false
-      deploy:
-        type: deploy_type
-        description: swarm-specific configuration settings
-        required: false
-      entrypoint:
+      ip:
         type: string
-        desciption: override the default "command"/entrypoint of container
-        required: false
-      environment:
-        type: map
-        description: map of all the environment variables required
-        required: false
-        entry_schema:
-          type: string
-      expose:
-        type: list
-        description: ports to expose internally
+        description: ip (Swarm style)
         required: false
     interfaces:
       Swarm:
@@ -336,7 +317,7 @@ node_types:
         type: tosca.interfaces.MiCADO.Kubernetes
     attributes:
       port:
-        type: integer        
+        type: integer
     capabilities:
       service:
         type: tosca.capabilities.Container.Docker
@@ -364,14 +345,16 @@ relationship_types:
         description: Name of Docker network to connect containers over
         required: true
 
+capability_types:
+
   ## Defining TOSCA compute capabilities (normative as of V1.1)
   tosca.capabilities.Compute:
     derived_from: tosca.capabilities.Container
     properties:
-      name: 
+      name:
         type: string
         required: false
-      num_cpus: 
+      num_cpus:
         type: integer
         required: false
         constraints:
@@ -381,12 +364,12 @@ relationship_types:
         required: false
         constraints:
           - greater_or_equal: 0.1 GHz
-      disk_size: 
+      disk_size:
         type: scalar-unit.size
         required: false
         constraints:
           - greater_or_equal: 0 MB
-      mem_size: 
+      mem_size:
         type: scalar-unit.size
         required: false
         constraints:
@@ -496,4 +479,3 @@ policy_types:
         type: string
         description: python code to define scaling rule
         required: true
-
