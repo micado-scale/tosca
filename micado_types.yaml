@@ -139,6 +139,9 @@ node_types:
       host_name:
         type: string
         required: false
+      nics:
+        type: list
+        required: true
     interfaces:
       Occopus:
         type: tosca.interfaces.MiCADO.Occopus
