@@ -133,9 +133,6 @@ node_types:
       public_key_id:
         type: string
         required: true
-      firewall_policy:
-        type: string
-        required: false
       host_name:
         type: string
         required: false
