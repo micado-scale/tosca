@@ -1,0 +1,53 @@
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/v0.x.2/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+topology_template:
+  node_templates:
+    YOUR_WORKER_NODE:
+      #####################################################################################
+      ### Description of your worker node you can find example in the Occopus directory ###
+      #####################################################################################
+
+
+    policies:
+      - scalability:
+          type: tosca.policies.Scaling.MiCADO.VirtualMachine.CPU
+          targets: [ YOUR_WORKER_NODE ]
+          properties:
+            constants:
+              NODE_TH_MAX: '60' # Threshold max to be reach to scale up the number of instance
+              NODE_TH_MIN: '20' # Threshold min to be reach to scale down the number of instance
+              SERVICE_NAME: 'wordpress'
+            min_instances: 1    # Minimum instances to run on the infrastructure
+            max_instances: 3    # Maximum instances to run on the infrastructure
+
+
+
+policy_types:
+  tosca.policies.Scaling.MiCADO.VirtualMachine.CPU:
+    derived_from: tosca.policies.Scaling.MiCADO
+    description: base MiCADO policy defining data sources, constants, queries, alerts, limits and rules
+    properties:
+      queries:
+        type: list
+        description: pre-define alerts for VM CPU
+        default:
+          CONTAINERS: 'count(container_last_seen{container_label_io_kubernetes_container_name="{{CONTAINER}}"})'
+        required: true
+      scaling_rule:
+        type: string
+        description: pre-define scaling rule for VM CPU
+        default: |
+          if m_time_since_node_count_changed > 60:
+            if CONTAINERS/2 == len(m_nodes):
+              m_node_count+=1
+            if CONTAINERS <= len(m_nodes):
+              m_node_count-=1
+          else:
+            print('Transient phase, skipping update of nodes...')
+        required: true
