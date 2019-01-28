@@ -1,0 +1,45 @@
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/v0.x.2/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+topology_template:
+  node_templates:
+    YOUR_WORKER_NODE:
+      #####################################################################################
+      ### Description of your worker node you can find example in the Occopus directory ###
+      #####################################################################################    
+
+  policies:
+    - scalability:
+        type: tosca.policies.Scaling.MiCADO
+        targets: [ YOUR_WORKER_NODE ]
+        properties:
+          sources:
+            - "nginxapp"
+          constants:
+            MAXNODES: 2
+            MAXCONTAINERS: 8
+          queries:
+            REQUESTS: 'sum(nginx_connections_active)'
+          min_instances: 1
+          max_instances: '{{MAXNODES}}'
+          scaling_rule: |
+            reqnodes=0
+            REQUESTS = ceil(REQUESTS/5)
+            if REQUESTS>0:
+              reqconts = min(REQUESTS, MAXCONTAINERS)
+              reqnodes = reqconts/4
+              if reqnodes<m_node_count:
+                m_node_count-=1
+              if reqnodes>m_node_count:
+                m_node_count+=1
+            else:
+              m_node_count = 0
+            print "Number of required nodes:",reqnodes
+            print "Number of requested nodes:",m_node_count
+
+

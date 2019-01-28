@@ -1,0 +1,45 @@
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/v0.x.2/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+topology_template:
+  node_templates:
+    YOUR_WORKER_NODE:
+      #####################################################################################
+      ### Description of your worker node you can find example in the Occopus directory ###
+      #####################################################################################    
+
+    policies:
+      - scalability:
+        type: tosca.policies.Scaling.MiCADO
+        targets: [ YOUR_WORJER_NODE ]
+        properties:
+          sources:
+          - 'cqueue.server.ip.address:8090'
+          constants: 
+            AET: 30
+            DEADLINE: 1530270216
+            MAXNODES: 2
+            MAXCONTAINERS: 10
+          queries:
+            REMAININGTIME: '{{DEADLINE}}-time()'
+            ITEMS: 'rabbitmq_queue_messages_persistent{queue="machinery_tasks"}'
+          min_instances: 1
+          max_instances: '{{MAXNODES}}'
+          scaling_rule: |
+            reqnodes=0
+            if ITEMS>0:
+              reqconts = ceil(AET/(REMAININGTIME/ITEMS)) if REMAININGTIME>0 else MAXCONTAINERS
+              reqnodes = ceil(reqconts/5)
+              if reqnodes<m_node_count-1:
+                m_node_count-=1
+              if reqnodes>m_node_count:
+                m_node_count+=1
+            else:
+              m_node_count = 0
+            print "Number of required nodes:",reqnodes
+            print "Number of requested nodes:",m_node_count
