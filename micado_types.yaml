@@ -138,7 +138,7 @@ node_types:
         required: false
       nics:
         type: list
-        required: false
+        required: true
     interfaces:
       Occopus:
         type: tosca.interfaces.MiCADO.Occopus
