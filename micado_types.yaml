@@ -638,6 +638,17 @@ data_types:
           - 'NodePort'
           - 'LoadBalancer'
           - 'ExternalName'
+      nodePort:
+        description: Kubernetes nodePort assignment (30000-32767)
+        type: integer
+        required: false
+        constraints:
+          - greater_or_equal: 30000
+          - less_or_equal: 32767
+      metadata:
+        description: Kubernetes space for adding metadata (such as service name)
+        type: map
+        required: false
           
       # Start containerPort section - mostly informational and definitely not required
       # will NOT generate a service in MiCADO
@@ -653,12 +664,6 @@ data_types:
         description: port to expose on the host. If HostNetwork then must == ContainerPort
         type: integer
         required: false
-      
-
-      
-      
-      
-      
 
   resource_type:
     properties:
