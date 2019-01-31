@@ -139,6 +139,9 @@ node_types:
       host_name:
         type: string
         required: false
+      nics:
+        type: list
+        required: true
     interfaces:
       Occopus:
         type: tosca.interfaces.MiCADO.Occopus
@@ -296,19 +299,128 @@ node_types:
 
   tosca.nodes.MiCADO.Container.Application.Docker:
     derived_from: tosca.nodes.Container.Application.Docker
-    description: description of a Docker container
+    description: description of a Docker container using Compose or k8s-manifest keys & values
     properties:
+      container_name:
+        description: define the container name (Compose-naming)
+        type: string
+        required : false
+      name:
+        description: define the container name (Kubernetes-naming)
+        type: string
+        required: false
       ports:
+        description: ports to be forwarded (long-syntax Compose or Kubernetes)
         type: list
-        description: ports to be forwarded
+        required: false
+        entry_schema:
+          type: ports_type        
+      expose:
+        description: ports to expose to other linked services (superfluous in Kubernetes)
+        type: list
         required: false
       clusterIP:
+        description: ip (Kubernetes-naming)
         type: string
-        description: ip (Kubernetes style)
         required: false
       ip:
+        description: ip (Compose-naming)
         type: string
-        description: ip (Swarm style)
+        required: false
+      entrypoint:
+        description: command run by container (string-style Compose-naming)
+        type: string
+        required: false
+      command:
+        description: command run by container (list-style Kubernetes-naming)
+        type: list
+        required: false
+      cmd:
+        description: |
+          This uses Dockerfile naming instead of the docker-compose naming 
+          since "command" is already used above for the Kubernetes-style entrypoint.
+          arguments to pass to entrypoint (string-style *Dockerfile*-naming)
+        type: string
+        required: false
+      args:
+        description: arguments to pass to entrypoint (list-style Kubernetes-naming)
+        type: list
+        required: false
+      environment:
+        description: environment variables to pass to the container (map-style Compose-naming)
+        type: map
+        required: false
+      env:
+        description: environment variables to pass to the container (list-style Kubernetes-naming)
+        type: list
+        required: false
+      resources:
+        description: resource requirements for the contianer (Kubernetes-naming)
+        type: map
+        required: false
+      stop_grace_period:
+        description: time before container shutting-down is forcibly killed (Compose-style)
+        type: string
+        required: false
+      privileged:
+        description: run with root equivalency (Compose-style)
+        type: boolean
+        required: false
+      securityContext:
+        description: specify security options (Kubernetes-style)
+        type: map
+        required: false
+      tty:
+        description: allocate a TTY for the container (requires stdin set to true)
+        type: boolean
+        required: false
+      stdin_open:
+        description: allocate a buffer for stdin for this container (Compose-style)
+        type: boolean
+        required: false
+      stdin:
+        description: allocate a buffer for stdin for this container (Kubernetes-style)
+        type: boolean
+        required: false
+      stdinOnce:
+        description: close the stdin channel after one attach
+        type: boolean
+        required: false
+      healthcheck:
+        description: Docker-style healthcheck
+        type: map
+        required: false
+      livenessProbe:
+        description: Kubernetes-style healthcheck
+        type: map
+        required: false
+      readinessProbe:
+        description: Kubernetes-style ready-check
+        type: map
+        required: false
+      lifecycle:
+        description: Kubernetes hooks for lifecycle management
+        type: map
+        required: false
+      imagePullPolicy:
+        description: Force pull an image (N/A in Swarm)
+        type: string
+        required: false
+        constraints:
+        - valid_values:
+          - 'Always'
+          - 'IfNotPresent'
+      terminationMessagePath:
+        description: Kubernetes container path to write termination message
+        type: string
+        required: false
+      terminationMessagePolicy:
+        description: Kubernetes container termination message
+        type: string
+        required: false
+      workingDir:
+        description: Kubernetes container working directory
+        type: string
         required: false
     interfaces:
       Swarm:
@@ -353,7 +465,7 @@ node_types:
       driver_opts:
         type: map
         description: network driver options (incl. mtu)
-        required: false      
+        required: false
       ip_version:
         type: integer
         required: false
@@ -405,22 +517,27 @@ capability_types:
 
 
 artifact_types:
+  tosca.artifacts.CloudInit.Data:
+    derived_from: tosca.artifacts.Root
+    properties:
+      raw_text:
+        type: string
+        required: false
 
-    tosca.artifacts.File.Secrets.Docker:
-      derived_from: tosca.artifacts.File
-      properties:
-        name:
-          type: string
-          required: false
-        file:
-          type: string
-          required: false
-        external:
-          type: boolean
-          required: false
+  tosca.artifacts.File.Secrets.Docker:
+    derived_from: tosca.artifacts.File
+    properties:
+      name:
+        type: string
+        required: false
+      file:
+        type: string
+        required: false
+      external:
+        type: boolean
+        required: false
 
 data_types:
-
   deploy_type:
     properties:
       mode:
@@ -444,6 +561,104 @@ data_types:
       update_config:
         type: map
         required: false
+
+  ports_type:
+    description: |
+      Interchangable Compose-style or Kube-Manifest-style port definitions
+
+      The vocabulary that TOSCA uses to describe a port inside a container and 
+      a port to map to (publish) are in direct contradiction to the vocabulary
+      used by Kubernetes and Swarm.
+
+      TOSCA says...
+        "ports mappings from source (Docker container) to target (host) ports to publish"
+      Swarm says...
+        "target: the port inside the container"
+      Kubernetes says...
+        "targetPort: is the port the container accepts traffic on"
+      
+      Here we use the orchestrator's approach.
+    properties:
+    # Start service port section
+    # WILL generate a service in MiCADO
+      name:
+        desription: Name of port (Kubernetes-style)
+        type: string
+        required: false
+      target:
+        description: Port inside container (Swarm-style)
+        type: integer
+        required: false
+      targetPort:
+        description: Port inside container (Kubernetes-style)
+        type: string
+        required: false
+      published:
+        description: Visible port (Swarm-style)
+        type: integer
+        required: false
+      port:
+        description: Visible port (Kubernetes-style)
+        type: integer
+        required: false
+      protocol:
+        description: Protocol (Swarm & Kubernetes) - SCTP is Kube only 
+        type: string
+        required: false
+        constraints:
+        - valid_values:
+          - 'tcp'
+          - 'TCP'
+          - 'udp'
+          - 'UDP'
+          - 'SCTP'
+      mode:
+        description: |
+          Swarm-only but we will understand this in Kubernetes as ServiceTypes
+          Kubernetes will understand host as NodePort and ingress as ClusterIP
+        type: string
+        required: false
+        constraints:
+        - valid_values:
+          - 'host'
+          - 'ingress'
+          - 'ClusterIP'
+          - 'NodePort'
+          - 'LoadBalancer'
+          - 'ExternalName'
+      type:
+        description: The Kubernetes equivalent of mode
+        type: string
+        required: false
+        constraints:
+        - valid_values:
+          - 'host'
+          - 'ingress'
+          - 'ClusterIP'
+          - 'NodePort'
+          - 'LoadBalancer'
+          - 'ExternalName'
+          
+      # Start containerPort section - mostly informational and definitely not required
+      # will NOT generate a service in MiCADO
+      containerPort:
+        description: Give more info on exposed ports, omitting this does not prevent the port from being exposed (internally)
+        type: integer
+        required: false
+      hostIP:
+        description: Host IP to bind external port to
+        type: string
+        required: false
+      hostPort:
+        description: port to expose on the host. If HostNetwork then must == ContainerPort
+        type: integer
+        required: false
+      
+
+      
+      
+      
+      
 
   resource_type:
     properties:
