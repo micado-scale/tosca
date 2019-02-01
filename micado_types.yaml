@@ -632,11 +632,8 @@ data_types:
           - 'ExternalName'
       clusterIP:
         description: Kubernetes clusterIP assignment (10.0.0.1/24)
-        type: integer
+        type: string
         required: false
-        constraints:
-          - greater_or_equal: 30000
-          - less_or_equal: 32767
       nodePort:
         description: Kubernetes nodePort assignment (30000-32767)
         type: integer
