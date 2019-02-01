@@ -319,14 +319,6 @@ node_types:
         description: ports to expose to other linked services (superfluous in Kubernetes)
         type: list
         required: false
-      clusterIP:
-        description: ip (Kubernetes-naming)
-        type: string
-        required: false
-      ip:
-        description: ip (Compose-naming)
-        type: string
-        required: false
       entrypoint:
         description: command run by container (string-style Compose-naming)
         type: string
