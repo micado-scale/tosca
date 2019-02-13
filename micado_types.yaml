@@ -93,7 +93,15 @@ interface_types:
     derived_from: tosca.interfaces.node.lifecycle.Standard
     description: Interface for container orchestration with Kubernetes
     create:
-      description: Orchestrate with Kubernetes
+      description: Create the workload with Kubernetes
+    configure:
+      description: Configure the workload spec/template with Kubernetes
+
+  tosca.interfaces.relationship.MiCADO.Kubernetes.Configure:
+    derived_from: tosca.interfaces.relationship.Configure
+    description: Interface for relationship configurations with Kubernetes
+    attach:
+      description: Attach a volume with Kubernetes
 
 node_types:
   ##
