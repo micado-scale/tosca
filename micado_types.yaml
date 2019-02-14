@@ -110,6 +110,10 @@ node_types:
   tosca.nodes.MiCADO.Compute:
     derived_from: tosca.nodes.Compute
     description: Base compute node for MiCADO
+    properties:
+      context:
+        type: context_type
+        required: false
     capabilities:
       host:
         type: tosca.capabilities.Compute
@@ -535,6 +539,17 @@ artifact_types:
         required: false
 
 data_types:
+
+  context_type:
+    properties:
+      cloud_config:
+        type: string
+        required: false
+      append:
+        type: boolean
+        required: false
+        default: no
+
   deploy_type:
     properties:
       mode:
