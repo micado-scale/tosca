@@ -355,8 +355,12 @@ node_types:
         description: environment variables to pass to the container (list-style Kubernetes-naming)
         type: list
         required: false
+      labels:
+        description: Swarm style labels for the container in Swarm/Pod in Kubernetes
+        type: map
+        required: false
       resources:
-        description: resource requirements for the contianer (Kubernetes-naming)
+        description: resource requirements for the container (Kubernetes-naming)
         type: map
         required: false
       stop_grace_period:
@@ -421,6 +425,14 @@ node_types:
         required: false
       workingDir:
         description: Kubernetes container working directory
+        type: string
+        required: false
+      network_mode:
+        description: Swarm style option for setting hostNetwork
+        type: string
+        required: false
+      pid:
+        description: Swarm style option for setting hostPID
         type: string
         required: false
     interfaces:
