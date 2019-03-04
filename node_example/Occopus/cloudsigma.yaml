@@ -7,7 +7,7 @@ repositories:
   docker_hub: https://hub.docker.com/
 
 topology_template:
-i    worker_node:
+    worker_node:
       type: tosca.nodes.MiCADO.CloudSigma.Compute
       properties:
         num_cpus: 2000
