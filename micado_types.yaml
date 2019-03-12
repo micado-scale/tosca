@@ -179,6 +179,9 @@ node_types:
       subnet_id:
         type: string
         required: false
+      tags:
+        type: map
+        required: false
     interfaces:
       Occopus:
         type: tosca.interfaces.MiCADO.Occopus
