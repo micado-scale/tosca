@@ -201,6 +201,9 @@ node_types:
       opened_port:
         type: string
         required: false
+      infrastructure_component_id:
+        type: string
+        required: false
     interfaces:
       Occopus:
         type: tosca.interfaces.MiCADO.Occopus
