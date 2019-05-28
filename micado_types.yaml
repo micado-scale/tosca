@@ -148,6 +148,12 @@ node_types:
       host_name:
         type: string
         required: false
+      hv_relaxed:
+        type: boolean
+        required: false
+      hv_tsc:
+        type: boolean
+        required: false
       nics:
         type: list
         required: true
