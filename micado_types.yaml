@@ -244,6 +244,9 @@ node_types:
       server_name:
         type: string
         required: false
+      availability_zone:
+        type: string
+        required: false
       key_name:
         type: string
         required: false
