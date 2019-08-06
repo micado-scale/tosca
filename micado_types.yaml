@@ -1122,8 +1122,11 @@ data_types:
 
 # TOSCA Policy Types
 #
-# TOSCA policy types are used to specify scaling, monitoring
-# and other such requirements for nodes
+# TOSCA policy types are used to specify scaling, alerting, monitoring 
+# and other such requirements for nodes. Currently these types exist:
+#   * tosca.policies.Scaling.MiCADO
+#   * tosca.policies.Alerting.MiCADO
+#   * tosca.policies.Monitoring.MiCADO
 #
 policy_types:
 
@@ -1170,8 +1173,8 @@ policy_types:
         description: python code to define scaling rule
         required: true
   
-  tosca.policies.Monitoring.MiCADO:
-    description: base MiCADO policy for monitoring
+  tosca.policies.Alerting.MiCADO:
+    description: base MiCADO policy for alerting
     derived_from: tosca.policies.Root
     properties:
       sources:
@@ -1186,6 +1189,31 @@ policy_types:
         type: list
         description: list of prometheus alerts
         required: false
+      stage:
+        type: string
+        description: the stage that will be affected by the policy (not yet implemented)
+        default: started
+        required: false
+      priority:
+        type: integer
+        description: the priority with which the policy will be exectued (not yet implemented)
+        default: 100
+        required: false
+  
+  tosca.policies.Monitoring.MiCADO:
+    description: base MiCADO policy for metric collection on worker nodes
+    derived_from: tosca.policies.Root
+    properties:
+      node_exporter_metrics:
+        type: boolean
+        description: enable collection of node resource metrics with node_exporter
+        default: true
+        required: true
+      cadvisor_metrics:
+        type: boolean
+        description: enable collection of container resource metrics with cAdvisor
+        default: true
+        required: true
       stage:
         type: string
         description: the stage that will be affected by the policy (not yet implemented)
