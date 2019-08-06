@@ -103,6 +103,7 @@ node_types:
   # You can find the following node types below:
   #   * tosca.nodes.MiCADO.Compute
   #   * tosca.nodes.MiCADO.CloudSigma.Compute
+  #   * tosca.nodes.MiCADO.CloudSigma.NFS.Occo.zrh (an example of abstraction)
   #   * tosca.nodes.MiCADO.EC2.Compute
   #   * tosca.nodes.MiCADO.CloudBroker.Compute
   #   * tosca.nodes.MiCADO.Nova.Compute
@@ -165,6 +166,41 @@ node_types:
         type: tosca.interfaces.MiCADO.Occopus
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
+  
+  # A example of abstraction in Compute node types
+  tosca.nodes.MiCADO.CloudSigma.NFS.Occo.zrh:
+    description: CloudSigma VM (2GHz/2GB) with NFS dependencies, by Occopus on Zurich cloud
+    derived_from: tosca.nodes.MiCADO.CloudSigma.Compute
+    properties:
+      num_cpus:
+        type: integer
+        default: 2000
+        required: true
+      mem_size:
+        type: integer
+        default: 2147483648
+        required: true
+      context:
+        type: map
+        default:
+          append: yes
+          cloud_config: |
+            runcmd:
+            - apt-get install -y nfs-kernel-server nfs-common
+        required: true
+    capabilities:
+      host:
+        type: tosca.capabilities.Compute
+        properties:
+          num_cpus: 2
+          mem_size: 2 GB
+    interfaces:
+      Occopus:
+        type: tosca.interfaces.MiCADO.Occopus
+        create:
+          inputs:
+            interface_cloud: cloudsigma
+            endpoint_cloud: https://zrh.cloudsigma.com/api/2.0
 
   tosca.nodes.MiCADO.EC2.Compute:
     description: Amazon EC2 compute node
