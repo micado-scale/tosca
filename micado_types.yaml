@@ -166,11 +166,27 @@ node_types:
         type: tosca.interfaces.MiCADO.Occopus
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
-  
-  # A example of abstraction in Compute node types
-  tosca.nodes.MiCADO.CloudSigma.NFS.Occo.zrh:
-    description: CloudSigma VM (2GHz/2GB) with NFS dependencies, by Occopus on Zurich cloud
+ 
+  # Some examples of abstraction in Compute node types
+  tosca.nodes.MiCADO.CloudSigma.Compute.Occo:
+    description: Basic CloudSigma VM for MiCADO, by Occopus
     derived_from: tosca.nodes.MiCADO.CloudSigma.Compute
+    properties:
+      endpoint:
+        type: string
+        default: https://zrh.cloudsigma.com/api/2.0
+        required: true
+    interfaces:
+      Occopus:
+        type: tosca.interfaces.MiCADO.Occopus
+        create:
+          inputs:
+            interface_cloud: cloudsigma
+            endpoint_cloud: { get_property: [ SELF, endpoint ] }
+
+  tosca.nodes.MiCADO.CloudSigma.Compute.Occo.small:
+    description: Basic CloudSigma VM (2GHz/2GB) for MiCADO, by Occopus
+    derived_from: tosca.nodes.MiCADO.CloudSigma.Compute.Occo
     properties:
       num_cpus:
         type: integer
@@ -180,6 +196,39 @@ node_types:
         type: integer
         default: 2147483648
         required: true
+    interfaces:
+      Occopus:
+        type: tosca.interfaces.MiCADO.Occopus
+        create:
+          inputs:
+            interface_cloud: cloudsigma
+            endpoint_cloud: { get_property: [ SELF, endpoint ] }
+
+  tosca.nodes.MiCADO.CloudSigma.Compute.Occo.big:
+    description: Bigger CloudSigma VM (4GHz/4GB) for MiCADO, by Occopus
+    derived_from: tosca.nodes.MiCADO.CloudSigma.Compute.Occo
+    properties:
+      num_cpus:
+        type: integer
+        default: 4000
+        required: true
+      mem_size:
+        type: integer
+        default: 4294967296
+        required: true
+    interfaces:
+      Occopus:
+        type: tosca.interfaces.MiCADO.Occopus
+        create:
+          inputs:
+            interface_cloud: cloudsigma
+            endpoint_cloud: { get_property: [ SELF, endpoint ] }
+
+
+  tosca.nodes.MiCADO.CloudSigma.Occo.NFS:
+    description: CloudSigma VM (2GHz/2GB) with NFS dependencies, by Occopus
+    derived_from: tosca.nodes.MiCADO.CloudSigma.Compute.Occo.small
+    properties:
       context:
         type: map
         default:
@@ -188,19 +237,13 @@ node_types:
             runcmd:
             - apt-get install -y nfs-kernel-server nfs-common
         required: true
-    capabilities:
-      host:
-        type: tosca.capabilities.Compute
-        properties:
-          num_cpus: 2
-          mem_size: 2 GB
     interfaces:
       Occopus:
         type: tosca.interfaces.MiCADO.Occopus
         create:
           inputs:
             interface_cloud: cloudsigma
-            endpoint_cloud: https://zrh.cloudsigma.com/api/2.0
+            endpoint_cloud: { get_property: [ SELF, endpoint ] }
 
   tosca.nodes.MiCADO.EC2.Compute:
     description: Amazon EC2 compute node
