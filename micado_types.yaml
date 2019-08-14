@@ -103,7 +103,10 @@ node_types:
   # You can find the following node types below:
   #   * tosca.nodes.MiCADO.Compute
   #   * tosca.nodes.MiCADO.CloudSigma.Compute
-  #   * tosca.nodes.MiCADO.CloudSigma.NFS.Occo.zrh (an example of abstraction)
+  #   * tosca.nodes.MiCADO.CloudSigma.Compute.Occo
+  #   * tosca.nodes.MiCADO.CloudSigma.Compute.Occo.small
+  #   * tosca.nodes.MiCADO.CloudSigma.Compute.Occo.big
+  #   * tosca.nodes.MiCADO.CloudSigma.Compute.Occo.small.NFS
   #   * tosca.nodes.MiCADO.EC2.Compute
   #   * tosca.nodes.MiCADO.CloudBroker.Compute
   #   * tosca.nodes.MiCADO.Nova.Compute
@@ -166,11 +169,27 @@ node_types:
         type: tosca.interfaces.MiCADO.Occopus
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
-  
-  # A example of abstraction in Compute node types
-  tosca.nodes.MiCADO.CloudSigma.NFS.Occo.zrh:
-    description: CloudSigma VM (2GHz/2GB) with NFS dependencies, by Occopus on Zurich cloud
+ 
+  # Some examples of abstraction in Compute node types
+  tosca.nodes.MiCADO.CloudSigma.Compute.Occo:
+    description: Basic CloudSigma VM for MiCADO, by Occopus
     derived_from: tosca.nodes.MiCADO.CloudSigma.Compute
+    properties:
+      endpoint:
+        type: string
+        default: https://zrh.cloudsigma.com/api/2.0
+        required: true
+    interfaces:
+      Occopus:
+        type: tosca.interfaces.MiCADO.Occopus
+        create:
+          inputs:
+            interface_cloud: cloudsigma
+            endpoint_cloud: { get_property: [ SELF, endpoint ] }
+
+  tosca.nodes.MiCADO.CloudSigma.Compute.Occo.small:
+    description: Basic CloudSigma VM (2GHz/2GB) for MiCADO, by Occopus
+    derived_from: tosca.nodes.MiCADO.CloudSigma.Compute.Occo
     properties:
       num_cpus:
         type: integer
@@ -180,6 +199,39 @@ node_types:
         type: integer
         default: 2147483648
         required: true
+    interfaces:
+      Occopus:
+        type: tosca.interfaces.MiCADO.Occopus
+        create:
+          inputs:
+            interface_cloud: cloudsigma
+            endpoint_cloud: { get_property: [ SELF, endpoint ] }
+
+  tosca.nodes.MiCADO.CloudSigma.Compute.Occo.big:
+    description: Bigger CloudSigma VM (4GHz/4GB) for MiCADO, by Occopus
+    derived_from: tosca.nodes.MiCADO.CloudSigma.Compute.Occo
+    properties:
+      num_cpus:
+        type: integer
+        default: 4000
+        required: true
+      mem_size:
+        type: integer
+        default: 4294967296
+        required: true
+    interfaces:
+      Occopus:
+        type: tosca.interfaces.MiCADO.Occopus
+        create:
+          inputs:
+            interface_cloud: cloudsigma
+            endpoint_cloud: { get_property: [ SELF, endpoint ] }
+
+
+  tosca.nodes.MiCADO.CloudSigma.Occo.small.NFS:
+    description: CloudSigma VM (2GHz/2GB) with NFS dependencies, by Occopus
+    derived_from: tosca.nodes.MiCADO.CloudSigma.Compute.Occo.small
+    properties:
       context:
         type: map
         default:
@@ -188,19 +240,13 @@ node_types:
             runcmd:
             - apt-get install -y nfs-kernel-server nfs-common
         required: true
-    capabilities:
-      host:
-        type: tosca.capabilities.Compute
-        properties:
-          num_cpus: 2
-          mem_size: 2 GB
     interfaces:
       Occopus:
         type: tosca.interfaces.MiCADO.Occopus
         create:
           inputs:
             interface_cloud: cloudsigma
-            endpoint_cloud: https://zrh.cloudsigma.com/api/2.0
+            endpoint_cloud: { get_property: [ SELF, endpoint ] }
 
   tosca.nodes.MiCADO.EC2.Compute:
     description: Amazon EC2 compute node
@@ -1180,10 +1226,6 @@ policy_types:
     description: base MiCADO policy for alerting
     derived_from: tosca.policies.Root
     properties:
-      sources:
-        type: list
-        description: list of prometheus exporters as data sources
-        required: false
       constants:
         type: map
         description: list of constants referred in other sections
@@ -1204,19 +1246,23 @@ policy_types:
         required: false
   
   tosca.policies.Monitoring.MiCADO:
-    description: base MiCADO policy for metric collection on worker nodes
+    description: base MiCADO policy for enabling prometheus exporters
     derived_from: tosca.policies.Root
     properties:
-      node_exporter_metrics:
+      enable_node_metrics:
         type: boolean
-        description: enable collection of node resource metrics with node_exporter
-        default: true
+        description: enable default collection of node resource metrics (with node_exporter)
+        default: false
         required: true
-      cadvisor_metrics:
+      enable_container_metrics:
         type: boolean
-        description: enable collection of container resource metrics with cAdvisor
-        default: true
+        description: enable default collection of container resource metrics (with cAdvisor)
+        default: false
         required: true
+      custom_exporters:
+        type: list
+        description: custom list of exporters in format <pod-name>:<port>
+        required: false
       stage:
         type: string
         description: the stage that will be affected by the policy (not yet implemented)
