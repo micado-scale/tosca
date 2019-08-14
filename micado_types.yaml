@@ -103,7 +103,10 @@ node_types:
   # You can find the following node types below:
   #   * tosca.nodes.MiCADO.Compute
   #   * tosca.nodes.MiCADO.CloudSigma.Compute
-  #   * tosca.nodes.MiCADO.CloudSigma.NFS.Occo.zrh (an example of abstraction)
+  #   * tosca.nodes.MiCADO.CloudSigma.Compute.Occo
+  #   * tosca.nodes.MiCADO.CloudSigma.Compute.Occo.small
+  #   * tosca.nodes.MiCADO.CloudSigma.Compute.Occo.big
+  #   * tosca.nodes.MiCADO.CloudSigma.Compute.Occo.small.NFS
   #   * tosca.nodes.MiCADO.EC2.Compute
   #   * tosca.nodes.MiCADO.CloudBroker.Compute
   #   * tosca.nodes.MiCADO.Nova.Compute
@@ -225,7 +228,7 @@ node_types:
             endpoint_cloud: { get_property: [ SELF, endpoint ] }
 
 
-  tosca.nodes.MiCADO.CloudSigma.Occo.NFS:
+  tosca.nodes.MiCADO.CloudSigma.Occo.small.NFS:
     description: CloudSigma VM (2GHz/2GB) with NFS dependencies, by Occopus
     derived_from: tosca.nodes.MiCADO.CloudSigma.Compute.Occo.small
     properties:
