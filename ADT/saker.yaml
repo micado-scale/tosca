@@ -1,0 +1,108 @@
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/v0.7.3/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+topology_template:
+  node_templates:
+    worker-node:
+      type: tosca.nodes.MiCADO.CloudSigma.Compute
+      properties:
+        num_cpus: 2000
+        mem_size: 4294967296
+        vnc_password: secret
+        libdrive_id: 6fcf7507-f167-4064-b55e-0d628319981f
+        public_key_id: c3db01b7-9e87-413c-9ee5-b604aba8cc83
+        hv_relaxed: true
+        hv_tsc: true
+        nics:
+        - vlan: 0289db82-6bf8-4e6a-8e40-13dd0cc230b0
+        context:
+          append: no
+          cloud_config: |
+            write_files:
+            - path: 'C:\applications\grid\worker\GridWorkerService.yaml'
+              permissions: '0644'
+              content: |
+                ManagerHostName: 192.168.0.254
+                ManagerPort: 10100
+                WorkerPort: 10101
+                WorkingDirectory: C:\Grid\Worker\
+                PriorityThreshold: 0
+                MaximumNumberOfCores: 1
+                UseBlobStore: True
+                StorageHost: 'http://192.168.0.254'
+                Tags: 'cloud,micado_worker_id-{{node_id}},exp_id-test1'
+      interfaces:
+        Occopus:
+          create:
+            inputs:
+              interface_cloud: cloudsigma
+              endpoint_cloud: https://gva.cloudsigma.com/api/2.0
+      capabilities:
+        host:
+          properties:
+            num_cpus: 2
+            mem_size: 4 GB
+
+  policies:
+    - scalability:
+        type: tosca.policies.Scaling.MiCADO
+        targets: [ worker-node ]
+        properties:
+          sources:
+          - '31.171.250.142:9399'
+          constants:
+            MINNODES: 1
+            MAXNODES: 50
+            MWID_prefix: 'micado_worker_id-'
+          queries:
+            REMAININGTIME: 'closest_deadline-time()'
+            ERD: 'longest_ERD*60'
+            ITEMS_W: 'waiting_replications'
+            ITEMS_R: 'running_replications'
+            IDLEWORKERS: ['idle_workers','saker_tag']
+          min_instances: 1
+          max_instances: '{{MAXNODES}}'
+          scaling_rule: |
+            print "ITEMS_W:" +str(ITEMS_W)
+            print "ITEMS_R:" +str(ITEMS_R)
+            if m_userdata is None:
+              m_userdata=[]
+            if ITEMS_W>0:
+              print "ITEMS_W>0"
+              if REMAININGTIME>0:
+                reqnodes = ceil(ERD/(REMAININGTIME/ITEMS_W))
+                print "REQNODES (1): "+str(reqnodes)
+                reqnodes = min([reqnodes, ITEMS_W+ITEMS_R])
+                print "REQNODES (2): "+str(reqnodes)
+                if reqnodes >= m_node_count:
+                  m_node_count = reqnodes
+                  print "NEW number of requested nodes:"+str(m_node_count)
+              else:
+                print "ITEMS_W>0 and REMAININGTIME=0 is not implemented yet."
+            else:
+              if ITEMS_R>0:
+                print "ITEMS_W=0 and ITEMS_R>0"
+                print "IDLEWORKERS "+str(IDLEWORKERS)
+                REALIDLEWORKERS=[]
+                if IDLEWORKERS is not None:
+                  for x in IDLEWORKERS:
+                    if x.startswith(MWID_prefix):
+                      REALIDLEWORKERS.append(x[len(MWID_prefix):])
+                print "REALIDLEWORKERS: "+str(REALIDLEWORKERS)
+                m_nodes_todrop=[]
+                #Select VMs not yet dropped before
+                for anode in REALIDLEWORKERS:
+                  if anode not in m_userdata:
+                    m_userdata.append(anode)
+                    m_nodes_todrop.append(anode)
+                print "NODES TO DROP "+str(m_nodes_todrop)
+              else:
+                print "ITEMS_W=0 and ITEMS_R=0"
+                m_node_count = MINNODES
+                m_userdata=[]
+              print "NEW number of requested nodes:" +str(m_node_count)
