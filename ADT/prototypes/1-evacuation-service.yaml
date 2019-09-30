@@ -1,0 +1,77 @@
+# Proposed ADT for Saker deployment with Terraform & Microsoft Azure
+# Waiting on Terraform/Azure implementation
+
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/D5.5/micado_types.yaml
+
+topology_template:
+  node_templates:
+    worker-node:
+      type: tosca.nodes.MiCADO.Azure.Compute
+      properties:
+        cpu: 2000
+        mem: 4294967296
+        username: xx
+        password: xx
+        os_details: xx
+        public_ssh_key: xx
+        nics:
+        - vlan: xx
+        context:
+          append: no
+          cloud_config: |
+            write_files:
+            - path: 'C:\xx\yy\zz.yaml'
+              permissions: '0644'
+              content: |
+                ManagerHostName: xx.xx.xx.xx
+                ManagerPort: yyyy
+                WorkerPort: zzzz
+                WorkingDirectory: C:\xx\yy\
+                PriorityThreshold: 0
+                MaximumNumberOfCores: 1
+                UseBlobStore: True
+                StorageHost: 'http://xx.xx.xx.xx'
+                Tags: cloud
+      interfaces:
+        Terraform:
+          create:
+            inputs:
+              cloud: azure
+              endpoint: https://xx/api/
+      capabilities:
+        host:
+          properties:
+            num_cpus: 2
+            mem_size: 4 GB
+
+  policies:
+    - scalability:
+        type: tosca.policies.Scaling.MiCADO
+        targets: [ worker-node ]
+        properties:
+          sources:
+          - 'x.x.x.x:xxxx'
+          queries:
+            REMAININGTIME: 'closest_deadline-time()'
+            ERD: 'longest_ERD*60'
+            ITEMS_W: 'waiting_replications'
+            ITEMS_R: 'running_replications'
+          min_instances: 1
+          max_instances: 100
+          scaling_rule: |
+            print "ITEMS_W:",ITEMS_W
+            print "ITEMS_R:",ITEMS_R
+            if ITEMS_W>0 and REMAININGTIME>0:
+              reqnodes = ceil(ERD/(REMAININGTIME/ITEMS_W))
+              print "REQNODES (1): ",reqnodes
+              reqnodes = min([reqnodes, ITEMS_W+ITEMS_R])
+              print "REQNODES (2): ",reqnodes
+              if reqnodes >= m_node_count:
+                m_node_count = reqnodes
+                print "NEW number of requested nodes:",m_node_count
+            elif ITEMS_R==0:
+                m_node_count = 0
+                print "NEW number of requested nodes:",m_node_count

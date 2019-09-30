@@ -1,0 +1,74 @@
+# This ADT will be generated dynamically by the infrastructure
+# screen of CloudBroker, adding and removing new nodes and policies as needed.
+# See a sample CloudBroker node and sample scaling policy (PolicyKeeper format) below
+
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/D5.5/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+topology_template:
+  node_templates:
+
+# Sample CB node orchestrated by Occopus
+    <NAME_CREATED_DYNAMICALLY>:
+      type: tosca.nodes.MiCADO.CloudBroker.Compute
+      properties:
+        deployment_id: <ID_ADDED_DYNAMICALLY>
+        instance_type_id: <ID_ADDED_DYNAMICALLY>
+        key_pair_id: <ID_ADDED_DYNAMICALLY>
+        opened_port: <PORTS_ADDED_DYNAMICALLY>
+        context:
+          append: yes
+          cloud_config: |
+            <CLOUD_INIT_ADDED_DYNAMICALLY>
+      interfaces:
+        Occopus:
+          create:
+            inputs:
+              interface_cloud: cloudbroker
+              endpoint_cloud: <ENDPOINT_ADDED_DYNAMICALLY>
+
+# Scaling policy in PK format - not readable by an ADT
+Received policy:
+"stack": |-
+  b0e4c36a-9e10-44bc-a0ae-254d9a232c2e
+"scaling":
+  "nodes":
+  - "name": |-
+      node-7d68b555-d341-4750-8930-26973bc43310
+    "max_instances": !!int |-
+      2
+    "min_instances": !!int |-
+      1
+    "scaling_rule": |
+      if m_userdata is None:
+        m_userdata = {'initial_quantity_launched': False}
+
+      if not m_userdata['initial_quantity_launched']:
+        m_node_count = 1
+        if len(m_nodes) == 1:
+          m_userdata['initial_quantity_launched'] = True
+      else:
+        print("smth")
+        if (float(CPU_USAGE_PERCENT_node-7d68b555-d341-4750-8930-26973bc43310) / int(CORES_COUNT_node-7d68b555-d341-4750-8930-26973bc43310)) > 50:
+          m_node_count += 1
+        elif (float(CPU_USAGE_PERCENT_node-7d68b555-d341-4750-8930-26973bc43310) / int(CORES_COUNT_node-7d68b555-d341-4750-8930-26973bc43310)) < 99:
+          m_node_count -= 1
+    "stage": |-
+      started
+    "priority": !!int |-
+      100
+"data":
+  "sources":
+  - |-
+    b0e4c36a-9e10-44bc-a0ae-254d9a232c2e
+  "constants": {}
+  "queries":
+    "CPU_USAGE_PERCENT_node-7d68b555-d341-4750-8930-26973bc43310": |-
+      sum (irate(node_cpu {mode!="idle", node="node-7d68b555-d341-4750-8930-26973bc43310"} [1m])) * 100
+    "CORES_COUNT_node-7d68b555-d341-4750-8930-26973bc43310": |-
+      machine_cpu_cores{node="node-7d68b555-d341-4750-8930-26973bc43310"}
