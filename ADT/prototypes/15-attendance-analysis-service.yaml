@@ -1,0 +1,211 @@
+# Proposed ADT based on the existing Outlandish ADT for WordPress deployments
+# Uses the Job workload from Kubernetes
+
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/D5.5/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+topology_template:
+  node_templates:
+    nginxapp:
+      type: tosca.nodes.MiCADO.Container.Application.Docker
+      properties:
+        resources:
+          requests:
+            cpu: "200m"
+        env:
+          - name: NGINX_HOST
+            value: "xx"
+          - name: NGINX_PORT
+            value: "8080"
+          - name: FPM_HOST
+            value: "xx"
+          - name: FPM_PORT
+            value: "9000"
+        ports:
+          - target: 8080
+            type: NodePort
+            nodePort: 32349
+          - target: 9432
+      artifacts:
+        image:
+          type: tosca.artifacts.Deployment.Image.Container.Docker
+          file: outlandish/bedrock-web
+          repository: docker_hub
+      interfaces:
+        Kubernetes:
+          create:
+            implementation: image
+
+    wordpress:
+      type: tosca.nodes.MiCADO.Container.Application.Docker
+      properties:
+        resources:
+          requests:
+            cpu: "200m"
+        env:
+          - name: DB_HOST
+            value: "db"
+          - name: DB_NAME
+            value: "xx"
+          - name: DB_USER
+            value: "xx"
+          - name: DB_PASSWORD
+            value: "xx"
+          - name: WP_HOME
+            value: "xx"
+        ports:
+          - target: 9000
+      artifacts:
+        image:
+          type: tosca.artifacts.Deployment.Image.Container.Docker
+          file: <NEW_WORDPRESS_DOCKER_IMAGE>
+          repository: docker_hub
+      interfaces:
+        Kubernetes:
+          create:
+            implementation: image
+
+    taa-tool:
+      type: tosca.nodes.MiCADO.Container.Application.Docker
+      properties:
+        resources:
+          requests:
+            cpu: "400m"
+      artifacts:
+        image:
+          type: tosca.artifacts.Deployment.Image.Container.Docker
+          file: <TAA_TOOL_DOCKER_IMAGE>
+          repository: docker_hub
+      interfaces:
+        Kubernetes:
+          create:
+            inputs:
+              kind: Job
+    db:
+      type: tosca.nodes.MiCADO.Container.Application.Docker
+      properties:
+        resources:
+          requests:
+            cpu: "200m"
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: "xx"
+          - name: MYSQL_USER
+            value: "xx"
+          - name: MYSQL_PASSWORD
+            value: "xx"
+          - name: MYSQL_DATABASE
+            value: "xx"
+        ports:
+          - target: 3306
+      artifacts:
+        image:
+          type: tosca.artifacts.Deployment.Image.Container.Docker
+          file: mysql:5.7
+          repository: docker_hub
+      interfaces:
+        Kubernetes:
+          create:
+
+    worker_node:
+      type: tosca.nodes.MiCADO.EC2.Compute
+      properties:
+        region_name: eu-west-2
+        image_id: xx
+        instance_type: t2.medium
+        security_group_ids:
+          - "xx"
+      interfaces:
+        Occopus:
+          create:
+            inputs:
+              interface_cloud: ec2
+              endpoint_cloud: https://ec2.eu-west-2.amazonaws.com
+      capabilities:
+        host:
+          properties:
+            num_cpus: 2
+            mem_size: 2 GB
+
+  outputs:
+    ports:
+      value: { get_attribute: [ nginxapp, port ]}
+
+  policies:
+    - scalability:
+        type: tosca.policies.Scaling.MiCADO.VirtualMachine.CPU.node
+        targets: [ worker_node ]
+        properties:
+          constants:
+            NODE_TH_MAX: '66'
+            NODE_TH_MIN: '33'
+          min_instances: 1
+          max_instances: 20
+
+    - scalability:
+        type: tosca.policies.Scaling.MiCADO.Container.TAA.requests
+        targets: [ taa-tool ]
+        properties:
+          min_instances: 1
+          max_instances: 100
+
+
+policy_types:
+
+  tosca.policies.Scaling.MiCADO.Container.TAA.requests:
+    derived_from: tosca.policies.Scaling.MiCADO
+    description: base MiCADO policy defining data sources, constants, queries, alerts, limits and rules
+    properties:
+      sources:
+      - wordpress-taa-exporter:9100
+      queries:
+        type: map
+        default:
+          CONNECTIONS_REQUESTED: connections_requested == 1
+        required: true
+      scaling_rule:
+        type: string
+        description: pre-define scaling rule for connections to NGINX
+        default: |
+          if not m_userdata:
+            m_userdata = CONNECTIONS_REQUESTED
+          new_connections = [x for x in CONNECTIONS_REQUESTED if x not in m_userdata]
+          m_userdata = CONNECTIONS_REQUESTED
+          if new_connections:
+            m_container_count += len(new_connections)
+          else:
+            print('Transient phase, skipping update of containers...')
+        required: true
+
+  tosca.policies.Scaling.MiCADO.VirtualMachine.CPU.node:
+    derived_from: tosca.policies.Scaling.MiCADO
+    description: base MiCADO policy defining data sources, constants, queries, alerts, limits and rules
+    properties:
+      alerts:
+        type: list
+        description: pre-define alerts for VM CPU
+        default:
+          - alert: node_overloaded
+            expr: '(100-(avg(rate(node_cpu{group="worker_cluster",mode="idle"}[60s]))*100)) > {{NODE_TH_MAX}}'
+            for: 1m
+          - alert: node_underloaded
+            expr: '(100-(avg(rate(node_cpu{group="worker_cluster",mode="idle"}[60s]))*100)) < {{NODE_TH_MIN}}'
+            for: 1m
+        required: true
+      scaling_rule:
+        type: string
+        description: pre-define scaling rule for VM CPU
+        default: |
+          if len(m_nodes) <= m_node_count and m_time_since_node_count_changed > 60:
+            if node_overloaded:
+              m_node_count+=1
+            if node_underloaded:
+              m_node_count-=1
+          else:
+            print('Transient phase, skipping update of nodes...')
+        required: true

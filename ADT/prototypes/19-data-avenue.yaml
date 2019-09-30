@@ -1,0 +1,137 @@
+# Proposed ADT for data avenue. Tested on early MiCADO builds 
+
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/D5.5/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+topology_template:
+  inputs:
+    da_ports_exposed:
+      type: string
+      description: environment variable to set the root password
+      required: yes
+      default: DEFAULT_HERE
+    mysql_root_password:
+      type: string
+      description: environment variable to set the root password
+      required: yes
+      default: DEFAULT_HERE
+    mysql_database:
+      type: string
+      description: environment variable to set the database name
+      required: yes
+      default: DEFAULT_HERE
+    mysql_user:
+      type: string
+      description: environment variable to set the use name
+      required: yes
+      default: DEFAULT_HERE
+    mysql_password:
+      type: string
+      description: environment variable to set the password
+      required: yes
+      default: DEFAULT_HERE
+
+  node_templates:
+    proxy:
+       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+       properties:
+         image: <INSERT_DOCKER_IMAGE_FOR_PROXY>
+       requirements:
+       - host: VM
+
+    data-avenue:
+       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+       properties:
+         image: <INSERT_DOCKER_IMAGE_FOR_DATA_AV>
+         ports: { get_input: da_ports_exposed}
+       requirements:
+       - host: VM
+
+    mysql:
+       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+       properties:
+         image: <INSERT_DOCKER_IMAGE_FOR_MYSQL>
+         environment:
+           MYSQL_ROOT_PASSWORD: { get_input: mysql_root_password }
+           MYSQL_DATABASE: { get_input: mysql_database }
+           MYSQL_USER: { get_input: mysql_user }
+           MYSQL_PASSWORD: { get_input: mysql_password }
+         ports:
+         - target: 3306
+       requirements:
+         - host: VM
+
+    VM:
+      type: tosca.nodes.MiCADO.CloudSigma.Compute
+      properties:
+        num_cpus: 2600
+        mem_size: 4294967296
+        vnc_password: xx
+        libdrive_id: xx
+        public_key_id: xx
+        nics:
+        - firewall_policy: xx
+          ip_v4_conf:
+            conf: dhcp
+      interfaces:
+        Occopus:
+          create:
+            inputs:
+              interface_cloud: cloudsigma
+              endpoint_cloud: https://xx/api/
+      capabilities:
+        host:
+          properties:
+            num_cpus: 2
+            mem_size: 4 GB
+
+  outputs:
+    port:
+      value: { get_attribute: [ data-avenue, port ]}
+
+  policies:
+  - scalability:
+      type: tosca.policies.Scaling.MiCADO.Container.CPU
+      targets: [ data-avenue ]
+      properties:
+        constants:
+          SERVICE_FULL_NAME: 'data-avenue'
+          SERVICE_TH_MAX: '60'
+          SERVICE_TH_MIN: '25'
+        min_instances: 1
+        max_instances: 10
+
+policy_types:
+
+  tosca.policies.Scaling.MiCADO.Container.CPU:
+    derived_from: tosca.policies.Scaling.MiCADO
+    description: base MiCADO policy defining data sources, constants, queries, alerts, limits and rules
+    properties:
+      alerts:
+        type: list
+        description: pre-define alerts for container CPU
+        default:
+          - alert: da_overloaded
+            expr: 'avg(rate(container_cpu_usage_seconds_total{container_label_io_kubernetes_container_name="{{SERVICE_FULL_NAME}}"}[30s]))*100 > {{SERVICE_TH_MAX}}'
+            for: 30s
+          - alert: da_underloaded
+            expr: 'avg(rate(container_cpu_usage_seconds_total{container_label_io_kubernetes_container_name="{{SERVICE_FULL_NAME}}"}[30s]))*100 < {{SERVICE_TH_MIN}}'
+            for: 30s
+        required: true
+      scaling_rule:
+        type: string
+        description: pre-define scaling rule for container CPU for DA
+        default: |
+          if len(m_nodes) == m_node_count:
+            if da_overloaded and m_node_count > m_container_count:
+              m_container_count+=1
+            if da_underloaded:
+              m_container_count-=1
+          else:
+            print('Transient phase, skipping update of containers...')
+        required: true

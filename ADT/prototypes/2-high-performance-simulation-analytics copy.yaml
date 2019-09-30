@@ -1,0 +1,102 @@
+# Proposed ADT for a linux-based frontend (not yet implemented) with the
+# Windows-based workers used in other Saker use cases
+
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/D5.5/micado_types.yaml
+
+topology_template:
+  node_templates:
+
+    frontend-node:
+      type: tosca.nodes.MiCADO.CloudSigma.Compute
+      properties:
+        num_cpus: 2000
+        mem_size: 2147483648
+        vnc_password: secret
+        libdrive_id: ADD_YOUR_LIBRARY_DRIVE_ID_HERE
+        public_key_id: ADD_YOUR_PUBLIC_KEY_ID_HERE
+        nics:
+        - firewall_policy: ADD_YOUR_FIREWALL_POLICY_ID_HERE
+          ip_v4_conf:
+            conf: dhcp
+
+    frontend:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: <PATH_TO_FRONTEND_DOCKER_IMAGE>
+        ports:
+        - port: 80
+          nodePort: 30800
+      requirements:
+      - host: frontend-node
+
+    worker-node:
+      type: tosca.nodes.MiCADO.CloudSigma.Compute
+      properties:
+        num_cpus: 2000
+        mem_size: 4294967296
+        vnc_password: secret
+        libdrive_id: ADD_YOUR_LIBRARY_DRIVE_ID_HERE
+        public_key_id: ADD_YOUR_PUBLIC_KEY_ID_HERE
+        hv_relaxed: true
+        hv_tsc: true
+        nics:
+        - vlan: ADD_YOUR_VLAN_POLICY_ID_HERE
+        context:
+          append: no
+          cloud_config: |
+            write_files:
+            - path: 'C:\applications\grid\worker\GridWorkerService.yaml'
+              permissions: '0644'
+              content: |
+                ManagerHostName: 192.168.0.254
+                ManagerPort: 10100
+                WorkerPort: 10101
+                WorkingDirectory: C:\Grid\Worker\
+                PriorityThreshold: 0
+                MaximumNumberOfCores: 1
+                UseBlobStore: True
+                StorageHost: 'http://192.168.0.254'
+                Tags: 'cloud,micado_worker_id-{{node_id}},exp_id-test1'
+      interfaces:
+        Occopus:
+          create:
+            inputs:
+              interface_cloud: cloudsigma
+              endpoint_cloud: https://gva.cloudsigma.com/api/2.0
+      capabilities:
+        host:
+          properties:
+            num_cpus: 2
+            mem_size: 4 GB
+
+  policies:
+    - scalability:
+        type: tosca.policies.Scaling.MiCADO
+        targets: [ worker-node ]
+        properties:
+          sources:
+          - 'x.x.x.x:xxxx'
+          queries:
+            REMAININGTIME: 'closest_deadline-time()'
+            ERD: 'longest_ERD*60'
+            ITEMS_W: 'waiting_replications'
+            ITEMS_R: 'running_replications'
+          min_instances: 1
+          max_instances: 100
+          scaling_rule: |
+            print "ITEMS_W:",ITEMS_W
+            print "ITEMS_R:",ITEMS_R
+            if ITEMS_W>0 and REMAININGTIME>0:
+              reqnodes = ceil(ERD/(REMAININGTIME/ITEMS_W))
+              print "REQNODES (1): ",reqnodes
+              reqnodes = min([reqnodes, ITEMS_W+ITEMS_R])
+              print "REQNODES (2): ",reqnodes
+              if reqnodes >= m_node_count:
+                m_node_count = reqnodes
+                print "NEW number of requested nodes:",m_node_count
+            elif ITEMS_R==0:
+                m_node_count = 0
+                print "NEW number of requested nodes:",m_node_count

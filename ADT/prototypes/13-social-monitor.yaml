@@ -1,0 +1,4 @@
+# This ADT will be based heavily on other Outlandish ADTs
+# but extended with the deadline based capabilities of
+# examples on the jQueuer platform.
+# Requires container images and exported queue metrics

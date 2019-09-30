@@ -1,0 +1,31 @@
+# This ADT will be generated dynamically by HKN
+# See a sample Nova node which may be generated
+
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/D5.5/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+topology_template:
+  node_templates:
+
+# Sample dynamic Nova node orchestrated by Occopus
+    <NAME_CREATED_DYNAMICALLY>:
+      type: tosca.nodes.MiCADO.Nova.Compute
+      properties:
+        image_id: <ID_ADDED_DYNAMICALLY>
+        flavor_name: <ID_ADDED_DYNAMICALLY>
+        project_id: <ID_ADDED_DYNAMICALLY>
+        network_id: <ID_ADDED_DYNAMICALLY>
+        key_name: <KEY_ADDED_DYNAMICALLY>
+        security_groups:
+          - <PORTS_ADDED_DYNAMICALLY>
+      interfaces:
+        Occopus:
+          create:
+            inputs:
+              interface_cloud: nova
+              endpoint_cloud: <ENDPOINT_ADDED_DYNAMICALLY>

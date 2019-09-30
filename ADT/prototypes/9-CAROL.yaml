@@ -1,0 +1,4 @@
+# Incomplete (deployment method not yet clear)
+# jQueuer if container-based deployment, Saker if
+# restricted to virtual machines? Mixing consumption
+# policies with deadline policies

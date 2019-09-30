@@ -1,0 +1,93 @@
+# Proposed ADT for a linux-based Samba supervisor and storage
+# and Windows-based workers (policy based on Saker until more
+# details known), in OpenStack
+
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/D5.5/micado_types.yaml
+
+topology_template:
+  node_templates:
+    supervisor-node:
+      type: tosca.nodes.MiCADO.Nova.Compute
+      properties:
+        image_id: ADD_YOUR_ID_HERE (e.g. d4f4e496-031a-4f49-b034-f8dafe28e01c)
+        flavor_name: ADD_YOUR_FLAVOUR_ID_HERE (e.g. 3)
+        project_id: ADD_YOUR_ID_HERE (e.g. a678d20e71cb4b9f812a31e5f3eb63b0)
+        network_id: ADD_YOUR_ID_HERE (e.g. 3fd4c62d-5fbe-4bd9-9a9f-c161dabeefde)
+        key_name: ADD_YOUR_KEY_HERE (e.g. keyname)
+        security_groups:
+          - ADD_YOUR_ID_HERE (e.g. d509348f-21f1-4723-9475-0cf749e05c33)
+      interfaces:
+        Occopus:
+          create:
+            inputs:
+              interface_cloud: nova
+              endpoint_cloud: ADD_YOUR_ENDPOINT (e.g https://sztaki.cloud.mta.hu:5000/v3)
+      capabilities:
+        os:
+          type: linux
+
+    supervisor:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: <PATH_TO_SUPERVISOR_DOCKER_IMAGE>
+        ports: # Samba server ports
+        - port: 139
+        - port: 445
+        - port: 137
+          protocol: UDP
+        - port: 138
+          protocol: UDP
+      requirements:
+      - host: frontend-node
+
+    worker-node:
+      type: tosca.nodes.MiCADO.Nova.Compute
+      properties:
+        image_id: ADD_YOUR_ID_HERE (e.g. d4f4e496-031a-4f49-b034-f8dafe28e01c)
+        flavor_name: ADD_YOUR_FLAVOUR_ID_HERE (e.g. 3)
+        project_id: ADD_YOUR_ID_HERE (e.g. a678d20e71cb4b9f812a31e5f3eb63b0)
+        network_id: ADD_YOUR_ID_HERE (e.g. 3fd4c62d-5fbe-4bd9-9a9f-c161dabeefde)
+        key_name: ADD_YOUR_KEY_HERE (e.g. keyname)
+        security_groups:
+          - ADD_YOUR_ID_HERE (e.g. d509348f-21f1-4723-9475-0cf749e05c33)
+      interfaces:
+        Occopus:
+          create:
+            inputs:
+              interface_cloud: nova
+              endpoint_cloud: ADD_YOUR_ENDPOINT (e.g https://sztaki.cloud.mta.hu:5000/v3)
+      capabilities:
+        os:
+          type: windows
+
+  policies:
+    - scalability:
+        type: tosca.policies.Scaling.MiCADO
+        targets: [ worker-node ]
+        properties:
+          sources:
+          - 'x.x.x.x:xxxx'
+          queries:
+            REMAININGTIME: 'closest_deadline-time()'
+            ERD: 'longest_ERD*60'
+            ITEMS_W: 'waiting_replications'
+            ITEMS_R: 'running_replications'
+          min_instances: 1
+          max_instances: 100
+          scaling_rule: |
+            print "ITEMS_W:",ITEMS_W
+            print "ITEMS_R:",ITEMS_R
+            if ITEMS_W>0 and REMAININGTIME>0:
+              reqnodes = ceil(ERD/(REMAININGTIME/ITEMS_W))
+              print "REQNODES (1): ",reqnodes
+              reqnodes = min([reqnodes, ITEMS_W+ITEMS_R])
+              print "REQNODES (2): ",reqnodes
+              if reqnodes >= m_node_count:
+                m_node_count = reqnodes
+                print "NEW number of requested nodes:",m_node_count
+            elif ITEMS_R==0:
+                m_node_count = 0
+                print "NEW number of requested nodes:",m_node_count
