@@ -1,203 +1,185 @@
-## declaration of the tosca version
 tosca_definitions_version: tosca_simple_yaml_1_0
 
-
-## imports section defines the tosca files that are needed to parsed
 imports:
-  - https://raw.githubusercontent.com/micado-scale/tosca/master/policy/placement/requirement/location/tosca_policy_Placement_Requirement_location.yaml
-  - https://raw.githubusercontent.com/micado-scale/tosca/master/policy/placement/requirement/connection/tosca_policy_deployment_placement_requirement_connection.yaml
-  - https://raw.githubusercontent.com/micado-scale/tosca/master/policy/scalability/consumption/tosca_policy_scalability_comsumption.yaml
-  - https://raw.githubusercontent.com/micado-scale/tosca/master/micado_types.yaml
-## Url of the main repository fir the location of the docker Images. The user can specify her/his own
-## repository by adding another line with a name and url eg: my_repo: http://my_repo/
+  - https://raw.githubusercontent.com/micado-scale/tosca/v0.7.3/micado_types.yaml
+
 repositories:
   docker_hub: https://hub.docker.com/
 
-## the topology template start here
 topology_template:
-
-  ## The input section starts here. This is where all the values
-  ## that may be set in the topology template are grouped together.
-  inputs:
-    magician_image:
-      type: string
-      description: Docker image to run for the magician app
-      required: yes
-    classifier_image:
-      type: string
-      description: Docker image to run for the classifier app
-      required: yes
-    port_exposed:
-      type: list
-      description: port_exposed
-      required: yes
-      default:
-        - 8080:8080
-    host_cpu:
-      type: integer
-      description: cpu of the host
-      required: yes
-      default: 2
-    host_version:
-      type: version
-      description: version of host
-      required: yes
-      default: 16.0
-    url_list:
-      type: list
-      description: list of url
-      default: ["http://url_for_solr", "http://url_for_tomecat", "http://url_for_webpage"]
-      entry_schema:
-        type: string
-    host_mem:
-      type: scalar-unit.size
-      description: host mem capacity
-      required: yes
-      default: 4 GB
-    host_disk:
-      type: scalar-unit.size
-      description: host disk capacity
-      required: yes
-      default: 50 GB
-    libdrive_id:
-      type: string
-      description: id of the instance image to launch
-      required: yes
-      default: "some id"
-    max_cpu_consumption:
-      type: float
-      description: max cpu consumption
-      required: yes
-      default: 0.8
-    min_cpu_consumption:
-      type: float
-      description: min cpu consumption
-      required: yes
-      default: 0.2
-    scale_up_max_time:
-      type: scalar-unit.time
-      description: max time of scale scale up
-      required: yes
-      default: 5 m
-    scale_down_max_time:
-      type: scalar-unit.time
-      description: max time of scale scale down
-      required: yes
-      default: 5 m
-    location:
-      type: string
-      description: location to launch the instance
-      required: yes
-      default: Europe
-
-
-  ## The is the node template section. Where the node that compose
-  ## the topology and their relationships are specified
   node_templates:
-    ## This specifies the Docker Image node type and its parameters
     magician:
       type: tosca.nodes.MiCADO.Container.Application.Docker
       properties:
-        deploy:
-          resources:
-            reservations:
-              cpus: '1.0'
+        resources:
+          requests:
+            cpu: "800m"
         ports:
-          - "8080:8080"
-
-      ## This is the artefact of the Docker Image node type which represents
-      ## the Docker Image in either the common or personal docker hub (specified repository)
-      artifacts:
-        image:
-          type: tosca.artifacts.Deployment.Image.Container.Docker
-          file: { get_input: magician_image }
-          repository: docker_hub
-
-      ## This specifies the requirements to select the Virtual Machine on which the
-      ## Docker Image will be executed.
+        - target: 8080
+          published: 8081
+          nodePort: 30808
+          type: NodePort
       requirements:
-        - host:
-            node: VM
-            relationship: tosca.relationships.HostedOn
+      - host:
+          node: worker-node
+      artifacts:
+       image:
+         type: tosca.artifacts.Deployment.Image.Container.Docker
+         file: magician
+         repository: docker_hub
+      interfaces:
+        Kubernetes:
+          create:
+            implementation: image
+            inputs:
+              strategy:
+                type: Recreate
 
-    classifier:
+    magicianclassifier:
       type: tosca.nodes.MiCADO.Container.Application.Docker
-      artifacts:
-        image:
-          type: tosca.artifacts.Deployment.Image.Container.Docker
-          file: { get_input: classifier_image }
-          repository: docker_hub
       requirements:
-        - host:
-            node: VM
-            relationship: tosca.relationships.HostedOn
+      - host:
+          node: classifier-server
+      artifacts:
+       image:
+         type: tosca.artifacts.Deployment.Image.Container.Docker
+         file: magician-classifier
+         repository: docker_hub
+      interfaces:
+        Kubernetes:
+          create:
+            implementation: image
+            inputs:
+              strategy:
+                type: Recreate
 
-    ## This specifies the Virtual Machine Image node type and its parameters
-    VM:
-      type: tosca.nodes.MiCADO.Occopus.CloudSigma.Compute
-
-      ## This specifies the properties of the Virtual Machine Image node type
+    classifier-server:
+      type: tosca.nodes.MiCADO.CloudSigma.Compute
       properties:
-        cloud:
-          interface_cloud: cloudsigma
-          endpoint_cloud: https://zrh.cloudsigma.com/api/2.0
-
-      ## This specifies the capabilities of the Virtual Machine Image node type which
-      ## are matched against the requirements of the Docker Image type
+        num_cpus: 2000
+        mem_size: 2147483648
+        vnc_password: xx
+        libdrive_id: xx
+        public_key_id: xx
+        nics:
+        - firewall_policy:  xx
+          ip_v4_conf:
+            conf: dhcp
+      interfaces:
+        Occopus:
+          create:
+            inputs:
+              interface_cloud: cloudsigma
+              endpoint_cloud: https://zrh.cloudsigma.com/api/2.0
       capabilities:
         host:
           properties:
-            num_cpus: { get_input: host_cpu }
-            disk_size: { get_input: host_disk }
-            mem_size: { get_input: host_mem }
-            libdrive_id: { get_input: libdrive_id }
+            num_cpus: 2
+            mem_size: 2 GB
 
+    worker-node:
+      type: tosca.nodes.MiCADO.CloudSigma.Compute
+      properties:
+        num_cpus: 2600
+        mem_size: 4294967296
+        vnc_password: xx
+        libdrive_id: xx
+        public_key_id: xx
+        nics:
+        - firewall_policy: xx
+          ip_v4_conf:
+            conf: dhcp
+      interfaces:
+        Occopus:
+          create:
+            inputs:
+              interface_cloud: cloudsigma
+              endpoint_cloud: https://xx/api/
+      capabilities:
+        host:
+          properties:
+            num_cpus: 2
+            mem_size: 4 GB
 
-  ## This specifies the output that are defined by the attribute of the Output
-  outputs:
-    ip_address:
-      value: { get_attribute: [ magician, ip_address ]}
-    port:
-      value: { get_attribute: [ magician, port ]}
-
-
-  ## This specifies the policies that are applied to the different nodes of this topology template
   policies:
     - scalability:
-        type: tosca.policies.Scaling.Performance.Consumption
-        targets: [ magician ]
+        type: tosca.policies.Scaling.MiCADO.VirtualMachine.CPU.magician
+        targets: [ worker-node ]
         properties:
-          stage: Execution
-          priority: 100
-          trigger_1_ID: estimate_completion_time
-          trigger_1_Namespace: prometheus
-          max_cpu_consumption: { get_input: max_cpu_consumption }
-          scale_up_max_time: { get_input: scale_up_max_time }
-          min_cpu_consumption: { get_input: min_cpu_consumption }
-          scale_down_max_time: { get_input: scale_down_max_time }
-
+          constants:
+            NODE_NAME: 'worker-node'
+            NODE_TH_MAX: '70'
+            NODE_TH_MIN: '50'
+          min_instances: 1
+          max_instances: 4
     - scalability:
-        type: tosca.policies.Scaling.Performance.Consumption.Simple
+        type: tosca.policies.Scaling.MiCADO.Container.CPU.magician
         targets: [ magician ]
         properties:
-          stage: Execution
-          priority: 100
-          max_cpu_consumption: 80
-          min_cpu_consumption: 20
+          constants:
+            SERVICE_NAME: 'magician'
+            SERVICE_FULL_NAME: 'magician'
+            SERVICE_TH_MAX: '70'
+            SERVICE_TH_MIN: '50'
+          min_instances: 1
+          max_instances: 4
 
-    - deployment_connection:
-        type: tosca.policies.Placement.Requirement.Connection
-        targets: [ magician ]
-        properties:
-          stage: Deployment
-          priority: 100
-          url: { get_input: url_list }
+policy_types:
+  tosca.policies.Scaling.MiCADO.Container.CPU.magician:
+    derived_from: tosca.policies.Scaling.MiCADO
+    description: base MiCADO policy defining data sources, constants, queries, alerts, limits and rules
+    properties:
+      alerts:
+        type: list
+        description: pre-define alerts for container CPU
+        default:
+        - alert: service_overloaded
+          expr: 'avg(rate(container_cpu_usage_seconds_total{container_label_io_kubernetes_container_name="{{SERVICE_FULL_NAME}}"}[60s]))*100 > {{SERVICE_TH_MAX}}'
+          for: 30s
+        - alert: service_underloaded
+          expr: 'avg(rate(container_cpu_usage_seconds_total{container_label_io_kubernetes_container_name="{{SERVICE_FULL_NAME}}"}[60s]))*100 < {{SERVICE_TH_MIN}}'
+          for: 2m
+        required: true
+      scaling_rule:
+        type: string
+        description: pre-define scaling rule for container CPU
+        default: |
+          if len(m_nodes) == m_node_count:
+            if service_overloaded and m_node_count > m_container_count:
+              m_container_count+=1
+            if service_underloaded:
+              m_container_count-=1
+          else:
+            print('Transient phase, skipping update of containers...')
+        required: true
 
-    - deployment_location:
-        type: tosca.policies.Placement.Requirement.Location
-        targets: [ VM ]
-        properties:
-          stage: Deployment
-          priority: 100
-          trigger_1_namespace: prometheus
-          accepted_domain: { get_input: location }
+  tosca.policies.Scaling.MiCADO.VirtualMachine.CPU.magician:
+    derived_from: tosca.policies.Scaling.MiCADO
+    description: base MiCADO policy defining data sources, constants, queries, alerts, limits and rules
+    properties:
+      alerts:
+        type: list
+        description: pre-define alerts for VM CPU
+        default:
+        - alert: service_working
+          expr: 'avg(rate(container_cpu_usage_seconds_total{container_label_io_kubernetes_container_name="{{SERVICE_FULL_NAME}}"}[60s]))*100 > {{SERVICE_TH_MAX}}'
+          for: 30s
+        - alert: node_overloaded
+          expr: '(100-(avg(rate(node_cpu{node="{{ NODE_NAME }}", mode="idle"}[60s]))*100)) > {{NODE_TH_MAX}}'
+          for: 1m
+        - alert: node_underloaded
+          expr: '(100-(avg(rate(node_cpu{node="{{ NODE_NAME }}", mode="idle"}[60s]))*100)) < {{NODE_TH_MIN}}'
+          for: 2m
+        required: true
+      scaling_rule:
+        type: string
+        description: pre-define scaling rule for VM CPU
+        default: |
+          if len(m_nodes) <= m_node_count:
+            if node_overloaded and service_working:
+              m_node_count+=1
+            if node_underloaded:
+              m_node_count-=1
+          else:
+            print('Transient phase, skipping update of nodes...')
+        required: true
