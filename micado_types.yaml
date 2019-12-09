@@ -1,5 +1,5 @@
 # TOSCA types definitions for MiCADO
-# 
+#
 # MiCADO version: v0.8.0
 # TOSCA version: Simple Profile in YAML v1.0 (+ some v1.1)
 #
@@ -83,7 +83,7 @@ interface_types:
 #
 # MiCADO uses TOSCA nodes to build cloud components such as containers,
 # virtual machines or volumes. These components are further configured,
-# and their lifecycles managed, by passing orchestrator specific 
+# and their lifecycles managed, by passing orchestrator specific
 # options via TOSCA interfaces.
 #
 # OpenStack TOSCAParser WILL enforce restrictions on properties when
@@ -169,7 +169,7 @@ node_types:
         type: tosca.interfaces.MiCADO.Occopus
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
- 
+
   # Some examples of abstraction in Compute node types
   tosca.nodes.MiCADO.CloudSigma.Compute.Occo:
     description: Basic CloudSigma VM for MiCADO, by Occopus
@@ -279,6 +279,80 @@ node_types:
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
 
+  tosca.nodes.MiCADO.GCE.Compute:
+    description: Google Compute Engine compute node
+    derived_from: tosca.nodes.MiCADO.Compute
+    properties:
+      region:
+        type: string
+        required: true
+      project:
+        type: string
+        required: true
+      machine_type:
+        type: string
+        required: true
+      zone:
+        type: string
+        required: true
+      image:
+        type: string
+        required: true
+      network:
+        type: string
+        required: true
+      ssh-keys:
+        type: string
+        required: false
+      tags:
+        type: map
+        required: false
+    interfaces:
+      Occopus:
+        type: tosca.interfaces.MiCADO.Occopus
+      Terraform:
+        type: tosca.interfaces.MiCADO.Terraform
+
+  tosca.nodes.MiCADO.Azure.Compute:
+    description: Microsoft Azure compute node
+    derived_from: tosca.nodes.MiCADO.Compute
+    properties:
+      subscription_id:
+        type: string
+        required: true
+      tenant_id:
+        type: string
+        required: true
+      rg_name:
+        type: string
+        required: true
+      vn_name:
+        type: string
+        required: true
+      sn_name:
+        type: string
+        required: true
+      nw_sec_group:
+        type: string
+        required: true
+      vm_size:
+        type: string
+        required: true
+      image:
+        type: string
+        required: true
+      key_data:
+        type: string
+        required: false
+      public_ip:
+        type: string
+        required: false
+    interfaces:
+      Occopus:
+        type: tosca.interfaces.MiCADO.Occopus
+      Terraform:
+        type: tosca.interfaces.MiCADO.Terraform
+
   tosca.nodes.MiCADO.CloudBroker.Compute:
     description: CloudBroker compute node
     derived_from: tosca.nodes.MiCADO.Compute
@@ -311,18 +385,18 @@ node_types:
       image_id:
         type: string
         required: true
-      flavor_name:
+      flavor_id:
         type: string
         required: true
-      tenant_name:
+      auth_url:
         type: string
-        required: false
+        required: true
       project_id:
         type: string
         required: true
-      user_domain_name:
+      network_name:
         type: string
-        required: false
+        required: true
       network_id:
         type: string
         required: true
@@ -334,10 +408,10 @@ node_types:
         required: false
       key_name:
         type: string
-        required: false
+        required: true
       security_groups:
         type: list
-        required: false
+        required: true
       floating_ip:
         type: string
         required: false
@@ -374,10 +448,10 @@ node_types:
   # attempt to translate these fields
   tosca.nodes.MiCADO.Container.Application.Docker:
     description: |
-      description of a Docker container in the style of a Kubernetes 
+      description of a Docker container in the style of a Kubernetes
       ContainerSpec or Docker Compose long syntax
     derived_from: tosca.nodes.Container.Application.Docker
-    
+
     properties:
 
       # Kubernetes style field names
@@ -573,21 +647,21 @@ node_types:
         description: working directory *translates to Kubernetes workingDir*
         type: string
         required: false
-    
-    # Fill the artifact with the image property by default    
+
+    # Fill the artifact with the image property by default
     artifacts:
       image:
         type: tosca.artifacts.Deployment.Image.Container.Docker
         file: { get_property: [ SELF, image ] }
         repository: docker_hub
-    
+
     # Possible interfaces for this node
     interfaces:
       Swarm:
         type: tosca.interfaces.MiCADO.Swarm
       Kubernetes:
         type: tosca.interfaces.MiCADO.Kubernetes
-    
+
     # Possible outputs for this node
     attributes:
       port:
@@ -601,7 +675,7 @@ node_types:
         type: tosca.capabilities.Container.Docker
       scalable:
         type: tosca.capabilities.Scalable
-    
+
     # Relationships this node supports
     requirements:
       - service:
@@ -625,14 +699,14 @@ node_types:
   tosca.nodes.MiCADO.Container.Application.Docker.Deployment:
     description: An abstraction of the Docker container node, creates a Kubernetes Deployment
     derived_from: tosca.nodes.MiCADO.Container.Application.Docker
-    
+
     # Fill the artifact by default with the image property
     artifacts:
       image:
         type: tosca.artifacts.Deployment.Image.Container.Docker
         file: { get_property: [ SELF, image ] }
         repository: docker_hub
-    
+
     # Use these interface inputs by default
     interfaces:
       Kubernetes:
@@ -679,7 +753,7 @@ node_types:
           capability: tosca.capabilities.Compute
           node: tosca.nodes.MiCADO.Compute
           relationship: tosca.relationships.HostedOn
-  
+
   tosca.nodes.MiCADO.Container.Pod.Kubernetes.Deployment:
     description: An abstraction of the above, creates a Deployment
     derived_from: tosca.nodes.MiCADO.Container.Pod.Kubernetes
@@ -855,7 +929,7 @@ node_types:
                 path: { get_property: [ SELF, path ] }
                 endpoints: { get_property: [ SELF, endpoints ] }
                 readOnly: { get_property: [ SELF, readOnly ] }
-  
+
   tosca.nodes.MiCADO.network.Network.Docker:
     description: Node for creating a new Docker network
     derived_from: tosca.nodes.network.Network
@@ -963,7 +1037,7 @@ artifact_types:
       raw_text:
         type: string
         required: false
-  
+
   tosca.artifacts.File.Secrets.Docker:
     description: A legacy artifact type for Docker secrets
     derived_from: tosca.artifacts.File
@@ -1046,7 +1120,7 @@ data_types:
         type: integer
         required: false
       protocol:
-        description: Protocol (Swarm & Kubernetes) - SCTP is Kube only 
+        description: Protocol (Swarm & Kubernetes) - SCTP is Kube only
         type: string
         required: false
         constraints:
@@ -1060,7 +1134,7 @@ data_types:
         description: Port inside container (Kubernetes-style)
         type: string
         required: false
-          
+
       # Kubernetes ContainerPort fields
       containerPort:
         description: Give more info on exposed ports, omitting this does not prevent the port from being exposed (internally)
@@ -1092,7 +1166,7 @@ data_types:
         - valid_values:
           - 'host'
           - 'ingress'
-      
+
       # Kubernetes Service field
       metadata:
         description: Kubernetes space for adding metadata (such as service name)
@@ -1181,7 +1255,7 @@ data_types:
 
 # TOSCA Policy Types
 #
-# TOSCA policy types are used to specify scaling, alerting, monitoring 
+# TOSCA policy types are used to specify scaling, alerting, monitoring
 # and other such requirements for nodes. Currently these types exist:
 #   * tosca.policies.Scaling.MiCADO
 #   * tosca.policies.Alerting.MiCADO
@@ -1231,7 +1305,7 @@ policy_types:
         type: string
         description: python code to define scaling rule
         required: true
-  
+
   tosca.policies.Alerting.MiCADO:
     description: base MiCADO policy for alerting
     derived_from: tosca.policies.Root
@@ -1254,7 +1328,7 @@ policy_types:
         description: the priority with which the policy will be exectued (not yet implemented)
         default: 100
         required: false
-  
+
   tosca.policies.Monitoring.MiCADO:
     description: base MiCADO policy for enabling prometheus exporters
     derived_from: tosca.policies.Root
