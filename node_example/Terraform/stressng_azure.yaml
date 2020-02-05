@@ -31,12 +31,10 @@ topology_template:
     worker-node:
       type: tosca.nodes.MiCADO.Azure.Compute
       properties:
-        tenant_id: tid
-        subscription_id: sid
-        rg_name: Test
-        vn_name: TVN
-        sn_name: TSN
-        nw_sec_group: TNSG
+        resource_group: Test
+        virtual_network: TVN
+        subnet: TSN
+        network_security_group: TNSG
         vm_size: Standard_DS1_v2
         image: 16.04.0-LTS
         key_data: ssh-rsa
