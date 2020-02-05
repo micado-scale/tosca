@@ -108,6 +108,10 @@ node_types:
   #   * tosca.nodes.MiCADO.CloudSigma.Compute.Occo.big
   #   * tosca.nodes.MiCADO.CloudSigma.Compute.Occo.small.NFS
   #   * tosca.nodes.MiCADO.EC2.Compute
+  #   * tosca.nodes.MiCADO.EC2.Compute.Occo
+  #   * tosca.nodes.MiCADO.EC2.Compute.Terra
+  #   * tosca.nodes.MiCADO.GCE.Compute
+  #   * tosca.nodes.MiCADO.Azure.Compute
   #   * tosca.nodes.MiCADO.CloudBroker.Compute
   #   * tosca.nodes.MiCADO.Nova.Compute
   #
@@ -167,8 +171,6 @@ node_types:
     interfaces:
       Occopus:
         type: tosca.interfaces.MiCADO.Occopus
-      Terraform:
-        type: tosca.interfaces.MiCADO.Terraform
 
   # Some examples of abstraction in Compute node types
   tosca.nodes.MiCADO.CloudSigma.Compute.Occo:
@@ -278,7 +280,43 @@ node_types:
         type: tosca.interfaces.MiCADO.Occopus
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
-
+  
+  # Some examples of abstraction for EC2
+  tosca.nodes.MiCADO.EC2.Compute.Occo:
+    description: Basic EC2 VM for MiCADO, by Occopus, on eu-west-2
+    derived_from: tosca.nodes.MiCADO.EC2.Compute
+    properties:
+      region_name:
+        type: string
+        default: eu-west-2
+        required: true
+      endpoint:
+        type: string
+        default: https://ec2.eu-west-2.amazonaws.com
+        required: true
+    interfaces:
+      Occopus:
+        type: tosca.interfaces.MiCADO.Occopus
+        create:
+          inputs:
+            interface_cloud: ec2
+            endpoint_cloud: { get_property: [ SELF, endpoint ] }
+            
+  tosca.nodes.MiCADO.EC2.Compute.Terra:
+    description: Basic EC2 VM for MiCADO, by Terraform, on eu-west-2
+    derived_from: tosca.nodes.MiCADO.EC2.Compute
+    properties:
+      region_name:
+        type: string
+        default: eu-west-2
+        required: true
+    interfaces:
+      Terraform:
+        type: tosca.interfaces.MiCADO.Terraform
+        create:
+          inputs:
+            provider: ec2
+            
   tosca.nodes.MiCADO.GCE.Compute:
     description: Google Compute Engine compute node
     derived_from: tosca.nodes.MiCADO.Compute
@@ -308,8 +346,6 @@ node_types:
         type: map
         required: false
     interfaces:
-      Occopus:
-        type: tosca.interfaces.MiCADO.Occopus
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
 
@@ -342,8 +378,6 @@ node_types:
         type: string
         required: false
     interfaces:
-      Occopus:
-        type: tosca.interfaces.MiCADO.Occopus
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
 
@@ -369,8 +403,6 @@ node_types:
     interfaces:
       Occopus:
         type: tosca.interfaces.MiCADO.Occopus
-      Terraform:
-        type: tosca.interfaces.MiCADO.Terraform
 
   tosca.nodes.MiCADO.Nova.Compute:
     description: Openstack Nova Compute node
