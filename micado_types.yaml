@@ -385,18 +385,27 @@ node_types:
       image_id:
         type: string
         required: true
+      flavor_name:
+        type: string
+        required: false
       flavor_id:
         type: string
-        required: true
+        required: false
+      tenant_name:
+        type: string
+        required: false
       auth_url:
         type: string
-        required: true
+        required: false
       project_id:
         type: string
         required: true
+      user_domain_name:
+        type: string
+        required: false
       network_name:
         type: string
-        required: true
+        required: false
       network_id:
         type: string
         required: true
@@ -408,10 +417,10 @@ node_types:
         required: false
       key_name:
         type: string
-        required: true
+        required: false
       security_groups:
         type: list
-        required: true
+        required: false
       floating_ip:
         type: string
         required: false
