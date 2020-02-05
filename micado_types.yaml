@@ -317,22 +317,16 @@ node_types:
     description: Microsoft Azure compute node
     derived_from: tosca.nodes.MiCADO.Compute
     properties:
-      subscription_id:
+      resource_group:
         type: string
         required: true
-      tenant_id:
+      virtual_network:
         type: string
         required: true
-      rg_name:
+      subnet:
         type: string
         required: true
-      vn_name:
-        type: string
-        required: true
-      sn_name:
-        type: string
-        required: true
-      nw_sec_group:
+      network_security_group:
         type: string
         required: true
       vm_size:
