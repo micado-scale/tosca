@@ -313,8 +313,6 @@ node_types:
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
         create:
-          inputs:
-            provider: ec2
             
   tosca.nodes.MiCADO.GCE.Compute:
     description: Google Compute Engine compute node
@@ -374,7 +372,7 @@ node_types:
         type: string
         required: false
       public_ip:
-        type: string
+        type: boolean
         required: false
     interfaces:
       Terraform:
