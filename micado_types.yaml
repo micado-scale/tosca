@@ -32,13 +32,17 @@ interface_types:
     description: Interface for VM management with Occopus
     derived_from: tosca.interfaces.node.lifecycle.Standard
     inputs:
-      endpoint_cloud:
+      endpoint:
         type: string
         description: Cloud API endpoint
         required: false
+      endpoint_cloud:
+        type: string
+        description: Cloud API endpoint DEPRECATED
+        required: false
       interface_cloud:
         type: string
-        description: Cloud provider
+        description: Cloud provider DEPRECATED
         required: false
         constraints:
           - valid_values: [ 'ec2', 'nova', 'cloudsigma', 'cloudbroker' ]
@@ -49,8 +53,8 @@ interface_types:
     description: Interface for VM management with Terraform
     derived_from: tosca.interfaces.node.lifecycle.Standard
     inputs:
-      provider:
-        description: Cloud provider
+      endpoint:
+        description: Cloud provider endpoint API
         type: string
         required: false
     create:
@@ -186,8 +190,7 @@ node_types:
         type: tosca.interfaces.MiCADO.Occopus
         create:
           inputs:
-            interface_cloud: cloudsigma
-            endpoint_cloud: { get_property: [ SELF, endpoint ] }
+            endpoint: { get_property: [ SELF, endpoint ] }
 
   tosca.nodes.MiCADO.CloudSigma.Compute.Occo.small:
     description: Basic CloudSigma VM (2GHz/2GB) for MiCADO, by Occopus
@@ -206,8 +209,7 @@ node_types:
         type: tosca.interfaces.MiCADO.Occopus
         create:
           inputs:
-            interface_cloud: cloudsigma
-            endpoint_cloud: { get_property: [ SELF, endpoint ] }
+            endpoint: { get_property: [ SELF, endpoint ] }
 
   tosca.nodes.MiCADO.CloudSigma.Compute.Occo.big:
     description: Bigger CloudSigma VM (4GHz/4GB) for MiCADO, by Occopus
@@ -226,8 +228,7 @@ node_types:
         type: tosca.interfaces.MiCADO.Occopus
         create:
           inputs:
-            interface_cloud: cloudsigma
-            endpoint_cloud: { get_property: [ SELF, endpoint ] }
+            endpoint: { get_property: [ SELF, endpoint ] }
 
 
   tosca.nodes.MiCADO.CloudSigma.Occo.small.NFS:
@@ -247,8 +248,7 @@ node_types:
         type: tosca.interfaces.MiCADO.Occopus
         create:
           inputs:
-            interface_cloud: cloudsigma
-            endpoint_cloud: { get_property: [ SELF, endpoint ] }
+            endpoint: { get_property: [ SELF, endpoint ] }
 
   tosca.nodes.MiCADO.EC2.Compute:
     description: Amazon EC2 compute node
@@ -299,8 +299,7 @@ node_types:
         type: tosca.interfaces.MiCADO.Occopus
         create:
           inputs:
-            interface_cloud: ec2
-            endpoint_cloud: { get_property: [ SELF, endpoint ] }
+            endpoint: { get_property: [ SELF, endpoint ] }
             
   tosca.nodes.MiCADO.EC2.Compute.Terra:
     description: Basic EC2 VM for MiCADO, by Terraform, on eu-west-2
