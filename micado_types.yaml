@@ -362,13 +362,22 @@ node_types:
       network_security_group:
         type: string
         required: true
-      vm_size:
+      size:
         type: string
         required: true
-      image:
+      admin_username:
         type: string
-        required: true
-      key_data:
+        required: false
+      admin_password:
+        type: string
+        required: false
+      image_sku:
+        type: string
+        required: false      
+      source_image_id:
+        type: string
+        required: false
+      public_key:
         type: string
         required: false
       public_ip:
