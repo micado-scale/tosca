@@ -1109,7 +1109,9 @@ data_types:
       append:
         type: boolean
         required: false
-        default: no
+      insert:
+        type: boolean
+        required: false
 
   deploy_type:
     description: Available properties for Swarm specific orchestration
