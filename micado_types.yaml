@@ -32,13 +32,17 @@ interface_types:
     description: Interface for VM management with Occopus
     derived_from: tosca.interfaces.node.lifecycle.Standard
     inputs:
-      endpoint_cloud:
+      endpoint:
         type: string
         description: Cloud API endpoint
         required: false
+      endpoint_cloud:
+        type: string
+        description: Cloud API endpoint DEPRECATED
+        required: false
       interface_cloud:
         type: string
-        description: Cloud provider
+        description: Cloud provider DEPRECATED
         required: false
         constraints:
           - valid_values: [ 'ec2', 'nova', 'cloudsigma', 'cloudbroker' ]
@@ -49,8 +53,8 @@ interface_types:
     description: Interface for VM management with Terraform
     derived_from: tosca.interfaces.node.lifecycle.Standard
     inputs:
-      provider:
-        description: Cloud provider
+      endpoint:
+        description: Cloud provider endpoint API
         type: string
         required: false
     create:
@@ -83,7 +87,7 @@ interface_types:
 #
 # MiCADO uses TOSCA nodes to build cloud components such as containers,
 # virtual machines or volumes. These components are further configured,
-# and their lifecycles managed, by passing orchestrator specific 
+# and their lifecycles managed, by passing orchestrator specific
 # options via TOSCA interfaces.
 #
 # OpenStack TOSCAParser WILL enforce restrictions on properties when
@@ -108,6 +112,10 @@ node_types:
   #   * tosca.nodes.MiCADO.CloudSigma.Compute.Occo.big
   #   * tosca.nodes.MiCADO.CloudSigma.Compute.Occo.small.NFS
   #   * tosca.nodes.MiCADO.EC2.Compute
+  #   * tosca.nodes.MiCADO.EC2.Compute.Occo
+  #   * tosca.nodes.MiCADO.EC2.Compute.Terra
+  #   * tosca.nodes.MiCADO.GCE.Compute
+  #   * tosca.nodes.MiCADO.Azure.Compute
   #   * tosca.nodes.MiCADO.CloudBroker.Compute
   #   * tosca.nodes.MiCADO.Nova.Compute
   #
@@ -167,8 +175,6 @@ node_types:
     interfaces:
       Occopus:
         type: tosca.interfaces.MiCADO.Occopus
-      Terraform:
-        type: tosca.interfaces.MiCADO.Terraform
 
   # Some examples of abstraction in Compute node types
   tosca.nodes.MiCADO.CloudSigma.Compute.Occo:
@@ -184,8 +190,7 @@ node_types:
         type: tosca.interfaces.MiCADO.Occopus
         create:
           inputs:
-            interface_cloud: cloudsigma
-            endpoint_cloud: { get_property: [ SELF, endpoint ] }
+            endpoint: { get_property: [ SELF, endpoint ] }
 
   tosca.nodes.MiCADO.CloudSigma.Compute.Occo.small:
     description: Basic CloudSigma VM (2GHz/2GB) for MiCADO, by Occopus
@@ -204,8 +209,7 @@ node_types:
         type: tosca.interfaces.MiCADO.Occopus
         create:
           inputs:
-            interface_cloud: cloudsigma
-            endpoint_cloud: { get_property: [ SELF, endpoint ] }
+            endpoint: { get_property: [ SELF, endpoint ] }
 
   tosca.nodes.MiCADO.CloudSigma.Compute.Occo.big:
     description: Bigger CloudSigma VM (4GHz/4GB) for MiCADO, by Occopus
@@ -224,8 +228,7 @@ node_types:
         type: tosca.interfaces.MiCADO.Occopus
         create:
           inputs:
-            interface_cloud: cloudsigma
-            endpoint_cloud: { get_property: [ SELF, endpoint ] }
+            endpoint: { get_property: [ SELF, endpoint ] }
 
 
   tosca.nodes.MiCADO.CloudSigma.Compute.Occo.small.NFS:
@@ -245,8 +248,7 @@ node_types:
         type: tosca.interfaces.MiCADO.Occopus
         create:
           inputs:
-            interface_cloud: cloudsigma
-            endpoint_cloud: { get_property: [ SELF, endpoint ] }
+            endpoint: { get_property: [ SELF, endpoint ] }
 
   tosca.nodes.MiCADO.EC2.Compute:
     description: Amazon EC2 compute node
@@ -278,6 +280,112 @@ node_types:
         type: tosca.interfaces.MiCADO.Occopus
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
+  
+  # Some examples of abstraction for EC2
+  tosca.nodes.MiCADO.EC2.Compute.Occo:
+    description: Basic EC2 VM for MiCADO, by Occopus, on eu-west-2
+    derived_from: tosca.nodes.MiCADO.EC2.Compute
+    properties:
+      region_name:
+        type: string
+        default: eu-west-2
+        required: true
+      endpoint:
+        type: string
+        default: https://ec2.eu-west-2.amazonaws.com
+        required: true
+    interfaces:
+      Occopus:
+        type: tosca.interfaces.MiCADO.Occopus
+        create:
+          inputs:
+            endpoint: { get_property: [ SELF, endpoint ] }
+            
+  tosca.nodes.MiCADO.EC2.Compute.Terra:
+    description: Basic EC2 VM for MiCADO, by Terraform, on eu-west-2
+    derived_from: tosca.nodes.MiCADO.EC2.Compute
+    properties:
+      region_name:
+        type: string
+        default: eu-west-2
+        required: true
+    interfaces:
+      Terraform:
+        type: tosca.interfaces.MiCADO.Terraform
+        create:
+            
+  tosca.nodes.MiCADO.GCE.Compute:
+    description: Google Compute Engine compute node
+    derived_from: tosca.nodes.MiCADO.Compute
+    properties:
+      region:
+        type: string
+        required: true
+      project:
+        type: string
+        required: true
+      machine_type:
+        type: string
+        required: true
+      zone:
+        type: string
+        required: true
+      image:
+        type: string
+        required: true
+      network:
+        type: string
+        required: true
+      ssh-keys:
+        type: string
+        required: false
+      tags:
+        type: map
+        required: false
+    interfaces:
+      Terraform:
+        type: tosca.interfaces.MiCADO.Terraform
+
+  tosca.nodes.MiCADO.Azure.Compute:
+    description: Microsoft Azure compute node
+    derived_from: tosca.nodes.MiCADO.Compute
+    properties:
+      resource_group:
+        type: string
+        required: true
+      virtual_network:
+        type: string
+        required: true
+      subnet:
+        type: string
+        required: true
+      network_security_group:
+        type: string
+        required: true
+      size:
+        type: string
+        required: true
+      admin_username:
+        type: string
+        required: false
+      admin_password:
+        type: string
+        required: false
+      image_sku:
+        type: string
+        required: false      
+      source_image_id:
+        type: string
+        required: false
+      public_key:
+        type: string
+        required: false
+      public_ip:
+        type: boolean
+        required: false
+    interfaces:
+      Terraform:
+        type: tosca.interfaces.MiCADO.Terraform
 
   tosca.nodes.MiCADO.CloudBroker.Compute:
     description: CloudBroker compute node
@@ -301,8 +409,6 @@ node_types:
     interfaces:
       Occopus:
         type: tosca.interfaces.MiCADO.Occopus
-      Terraform:
-        type: tosca.interfaces.MiCADO.Terraform
 
   tosca.nodes.MiCADO.Nova.Compute:
     description: Openstack Nova Compute node
@@ -313,14 +419,23 @@ node_types:
         required: true
       flavor_name:
         type: string
-        required: true
+        required: false
+      flavor_id:
+        type: string
+        required: false
       tenant_name:
+        type: string
+        required: false
+      auth_url:
         type: string
         required: false
       project_id:
         type: string
         required: true
       user_domain_name:
+        type: string
+        required: false
+      network_name:
         type: string
         required: false
       network_id:
@@ -994,7 +1109,9 @@ data_types:
       append:
         type: boolean
         required: false
-        default: no
+      insert:
+        type: boolean
+        required: false
 
   deploy_type:
     description: Available properties for Swarm specific orchestration
