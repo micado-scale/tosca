@@ -1,0 +1,182 @@
+# Inputs removed
+
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/v0.9.0/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+description: ADT for Sleep Healthcare & SSE Scheme Deployment on OpenStack
+
+dsl_definitions:
+  compute_cloud: &compute_cloud
+    type: tosca.nodes.MiCADO.Nova.Compute
+    properties:
+      image_id: ADD_YOUR_ID_HERE (e.g. d4f4e496-031a-4f49-b034-f8dafe28e01c)
+      flavor_name: ADD_YOUR_FLAVOUR_ID_HERE (e.g. 3)
+      project_id: ADD_YOUR_ID_HERE (e.g. a678d20e71cb4b9f812a31e5f3eb63b0)
+      network_id: ADD_YOUR_ID_HERE (e.g. 3fd4c62d-5fbe-4bd9-9a9f-c161dabeefde)
+      key_name: ADD_YOUR_KEY_HERE (e.g. keyname)
+      security_groups:
+        - ADD_YOUR_ID_HERE (e.g. d509348f-21f1-4723-9475-0cf749e05c33)
+    interfaces:
+      Terraform:
+        create:
+          inputs:
+            endpoint: ADD_YOUR_ENDPOINT_HERE (e.g https://sztaki.cloud.mta.hu:5000/v3)
+
+topology_template:
+  node_templates:
+
+    # Describe the Sleep Healthcare application containers
+    xnat:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: somnonetz/snet-xnat
+        env:
+        - name: XNAT_ROOT
+          value:
+        - name: XNAT_HOME
+          value:
+        - name: XNAT_DATASOURCE_DRIVER
+          value:
+        - name: XNAT_DATASOURCE_URL
+          value:
+        - name: XNAT_DATASOURCE_USERNAME
+          value:
+        - name: XNAT_DATASOURCE_PASSWORD
+          value:
+        - name: XNAT_HIBERNATE_DIALECT
+          value:
+        - name: TOMCAT_XNAT_FOLDER
+          value:
+        - name: CATALINA_OPTS
+          value: -Xms128m -Xmx2048m -Dxnat.home= -agentlib:jdwp=transport=dt_socket=dt_socket,server=y,suspend=n,address=8000
+        - name: PGPASSWORD
+          value:
+        ports:
+        - containerPort: 8080
+      requirements:
+      - host: sleep-app-server
+      - volume:
+          node: xnat-logs-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /data/xnat/home/logs
+      - volume: xnat-archive-vol
+      - volume: xnat-build-vol
+      - volume: docker-socket-vol
+
+    xnat-db:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: postgres:9.4-alpine
+        env:
+          - name: POSTGRES_USER
+            value:
+          - name: POSTGRES_PASSWORD
+            value:
+          - name: POSTGRES_DB
+            value:
+        ports:
+        - containerPort: 5432
+      requirements:
+      - host: sleep-app-server
+      - volume: 
+          node: postgres-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /var/lib/postgresql/data
+
+    nginx:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: somnonetz/snet-nginx
+        args: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+        env:
+          - name: XNAT_API_URL
+            value:
+          - name: SSE_SERVER_BASE_URL
+            value:
+          - name: TA_BASE_URL
+            value:
+          - name: SALT_VALUE
+            value:
+          - name: IV_VALUE
+            value:
+        ports:
+        - containerPort: 80
+          hostPort: 80
+        - containerPort: 443
+          hostPort: 443
+      requirements:
+      - host: sleep-app-server
+      - volume: letsencrypt-vol
+      - volume: certbot-vol
+      - volume: 
+          node: nginx-conf-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /etc/nginx/conf.d
+
+    certbot:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: certbot/certbot
+        command: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+      requirements:
+      - host: sleep-app-server
+      - volume: letsencrypt-vol
+      - volume: certbot-vol
+      - host: cq-server
+
+    # Describe volumes
+    xnat-logs-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /data/xnat/logs
+    xnat-archive-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /data/xnat/archive
+    xnat-build-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /data/xnat/build
+    docker-socket-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/run/docker.sock
+    postgres-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /data/xnat-db
+    letsencrypt-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /etc/letsencrypt
+    certbot-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/www/certbot
+    nginx-conf-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /data/nginx/conf.d
+
+    # Describe server VMs
+    sleep-app-server: *compute_cloud
+    sse-server: *compute_cloud
+    ta-server: *compute_cloud
+      
+  policies:
+  - monitoring:
+      type: tosca.policies.Monitoring.MiCADO
+      properties:
+        enable_container_metrics: true
+        enable_node_metrics: true
