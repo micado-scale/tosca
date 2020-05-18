@@ -167,6 +167,106 @@ topology_template:
       properties:
         path: /data/nginx/conf.d
 
+    # Describe the SSE containers
+    sse:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: uowcpc/asclepios-server
+        ports:
+        - target: 8080
+        env:
+        - name: DJANGO_LOGLEVEL
+          value: DEBUG
+        - name: TA_SERVER
+          value: "ta:8000"
+        - name: DB_NAME
+          value: sse-db
+        - name: DB_USER
+          value: sse
+        - name: DB_PASSWORD
+          value: sse
+        - name: DB_HOST
+          value: sse-db
+        - name: DB_PORT
+          value: "5432"
+        - name: ALLOWED_HOSTS
+          value: "*"
+        - name: DJANGO_DEBUG
+          value: "true"
+      requirements:
+      - host: sse-server
+
+    sse-db:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: postgres
+        ports:
+        - target: 5432
+        env:
+        - name: POSTGRES_USER 
+          value: sse
+        - name: POSTGRES_PASSWORD 
+          value: sse
+        - name: POSTGRES_DB
+          value: sse-db
+        - name: PGDATA
+          value: /var/lib/postgresql/data
+      requirements:
+      - host: sse-server
+
+    # Describe the TA containers
+    ta:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: uowcpc/asclepios-ta
+        ports:
+        - target: 8000
+        env:
+        - name: DJANGO_LOGLEVEL
+          value: DEBUG
+        - name: DB_NAME
+          value: ta-db
+        - name: DB_USER
+          value: ta
+        - name: DB_PASSWORD
+          value: ta
+        - name: DB_HOST
+          value: ta-db 
+        - name: DB_PORT
+          value: "5432"
+        - name: ALLOWED_HOSTS
+          value: "*"
+        - name: HASH_LENGTH
+          value: "256"
+        - name: KEY_G
+          value: "123"
+        - name: SALT
+          value: abc123!?
+        - name: IV
+          value: abcdefg
+        - name: DJANGO_DEBUG
+          value: "true"
+      requirements:
+      - host: ta-server
+
+    ta-db:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: postgres
+        ports:
+        - target: 5432
+        env:
+        - name: POSTGRES_USER 
+          value: ta
+        - name: POSTGRES_PASSWORD 
+          value: ta
+        - name: POSTGRES_DB
+          value: ta-db
+        - name: PGDATA
+          value: /var/lib/postgresql/data
+      requirements:
+      - host: ta-server
+
     # Describe server VMs
     sleep-app-server: *compute_cloud
     sse-server: *compute_cloud
