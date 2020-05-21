@@ -1770,5 +1770,7 @@ policy_types:
     properties:
       file_secrets:
         type: map
+        required: false
       text_secrets:
         type: map
+        required: false
