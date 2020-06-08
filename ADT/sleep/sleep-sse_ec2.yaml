@@ -21,8 +21,10 @@ dsl_definitions:
         - ADD_YOUR_SECURITY_GROUP_ID_HERE (e.g. sg-93d46bf7)
       key_name: -OPTIONAL- ADD_YOUR_KEY_NAME_HERE (e.g. my_ssh_key)
     interfaces:
-      Terraform:
-        create: {}
+      Occopus:
+        create:
+          inputs:
+            endpoint: https://ec2.eu-west-2.amazonaws.com
 
 topology_template:
   node_templates:
@@ -170,14 +172,15 @@ topology_template:
     sse:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
-        image: uowcpc/asclepios-server
+        image: uowcpc/asclepios-server:dev
         ports:
         - target: 8080
+          nodePort: 30808
         env:
         - name: DJANGO_LOGLEVEL
           value: DEBUG
         - name: TA_SERVER
-          value: "ta:8000"
+          value: "http://ta:8000"
         - name: DB_NAME
           value: sse-db
         - name: DB_USER
@@ -217,7 +220,7 @@ topology_template:
     ta:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
-        image: uowcpc/asclepios-ta
+        image: uowcpc/asclepios-ta:dev
         ports:
         - target: 8000
         env:

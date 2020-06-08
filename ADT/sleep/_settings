@@ -1,0 +1,6 @@
+MICADO_MASTER='123.456.7.8'
+MICADO_PORT="443"
+APP_ID="asclepios-sleep"
+SSL_USER="username"
+SSL_PASS="password"
+ADT_FILENAME="sleep-sse_ec2.yaml"
