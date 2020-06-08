@@ -171,14 +171,15 @@ topology_template:
     sse:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
-        image: uowcpc/asclepios-server
+        image: uowcpc/asclepios-server:dev
         ports:
         - target: 8080
+          nodePort: 30808
         env:
         - name: DJANGO_LOGLEVEL
           value: DEBUG
         - name: TA_SERVER
-          value: "ta:8000"
+          value: "http://ta:8000"
         - name: DB_NAME
           value: sse-db
         - name: DB_USER
@@ -218,7 +219,7 @@ topology_template:
     ta:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
-        image: uowcpc/asclepios-ta
+        image: uowcpc/asclepios-ta:dev
         ports:
         - target: 8000
         env:
