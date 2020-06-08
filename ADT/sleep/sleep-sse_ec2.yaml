@@ -25,7 +25,7 @@ dsl_definitions:
         create:
           inputs:
             endpoint: https://ec2.eu-west-2.amazonaws.com
-
+ 
 topology_template:
   node_templates:
 
@@ -65,8 +65,18 @@ topology_template:
             type: tosca.relationships.AttachesTo
             properties:
               location: /data/xnat/home/logs
-      - volume: xnat-archive-vol
-      - volume: xnat-build-vol
+      - volume:
+          node: xnat-archive-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /data/xnat/archive
+      - volume:
+          node: xnat-build-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /data/xnat/build
       - volume: docker-socket-vol
 
     xnat-db:
@@ -95,7 +105,6 @@ topology_template:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
         image: somnonetz/snet-nginx
-        args: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
         env:
           - name: XNAT_API_URL
             value:
@@ -114,8 +123,18 @@ topology_template:
           hostPort: 443
       requirements:
       - host: sleep-app-server
-      - volume: letsencrypt-vol
-      - volume: certbot-vol
+      - volume:
+          node: letsencrypt-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /etc/letsencrypt
+      - volume:
+          node: certbot-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /var/www/certbot
       - volume: 
           node: nginx-conf-vol
           relationship:
@@ -127,12 +146,20 @@ topology_template:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
         image: certbot/certbot
-        command: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
       requirements:
       - host: sleep-app-server
-      - volume: letsencrypt-vol
-      - volume: certbot-vol
-      - host: cq-server
+      - volume:
+          node: letsencrypt-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /etc/letsencrypt
+      - volume:
+          node: certbot-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /var/www/certbot
 
     # Describe volumes
     xnat-logs-vol:
@@ -158,11 +185,11 @@ topology_template:
     letsencrypt-vol:
       type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
-        path: /etc/letsencrypt
+        path: /data/certbot/conf
     certbot-vol:
       type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
-        path: /var/www/certbot
+        path: /data/certbot/www
     nginx-conf-vol:
       type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
