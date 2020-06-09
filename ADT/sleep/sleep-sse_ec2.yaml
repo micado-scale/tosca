@@ -25,7 +25,27 @@ dsl_definitions:
         create:
           inputs:
             endpoint: https://ec2.eu-west-2.amazonaws.com
- 
+
+  compute_cloud_with_nfs: &compute_cloud_with_nfs
+    type: tosca.nodes.MiCADO.EC2.Compute
+    properties:
+      region_name: ADD_YOUR_REGION_NAME_HERE (e.g. eu-west-1)
+      image_id: ADD_YOUR_IMAGE_ID_HERE (e.g. ami-061a2d878e5754b62)
+      instance_type: ADD_INSTANCE_TYPE_HERE (e.g. t2.small)
+      security_group_ids:
+        - ADD_YOUR_SECURITY_GROUP_ID_HERE (e.g. sg-93d46bf7)
+      key_name: -OPTIONAL- ADD_YOUR_KEY_NAME_HERE (e.g. my_ssh_key)
+      context:
+        insert: true
+        cloud_config: |
+          runcmd:
+          - apt-get install -y nfs-common
+    interfaces:
+      Occopus:
+        create:
+          inputs:
+            endpoint: https://ec2.eu-west-2.amazonaws.com
+
 topology_template:
   node_templates:
 
@@ -97,7 +117,7 @@ topology_template:
       requirements:
       - host: sleep-app-server
       - volume: 
-          node: postgres-vol
+          node: xnat-db-vol
           relationship:
             type: tosca.relationships.AttachesTo
             properties:
@@ -126,13 +146,13 @@ topology_template:
       requirements:
       - host: sleep-app-server
       - volume:
-          node: letsencrypt-vol
+          node: certbot-conf-vol
           relationship:
             type: tosca.relationships.AttachesTo
             properties:
               location: /etc/letsencrypt
       - volume:
-          node: certbot-vol
+          node: certbot-www-vol
           relationship:
             type: tosca.relationships.AttachesTo
             properties:
@@ -144,58 +164,66 @@ topology_template:
             properties:
               location: /etc/nginx/conf.d
 
-    certbot:
-      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
-      properties:
-        image: certbot/certbot
-      requirements:
-      - host: sleep-app-server
-      - volume:
-          node: letsencrypt-vol
-          relationship:
-            type: tosca.relationships.AttachesTo
-            properties:
-              location: /etc/letsencrypt
-      - volume:
-          node: certbot-vol
-          relationship:
-            type: tosca.relationships.AttachesTo
-            properties:
-              location: /var/www/certbot
+    # certbot:
+    #   type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+    #   properties:
+    #     image: certbot/certbot
+    #   requirements:
+    #   - host: sleep-app-server
+    #   - volume:
+    #       node: certbot-conf-vol
+    #       relationship:
+    #         type: tosca.relationships.AttachesTo
+    #         properties:
+    #           location: /etc/letsencrypt
+    #   - volume:
+    #       node: certbot-www-vol
+    #       relationship:
+    #         type: tosca.relationships.AttachesTo
+    #         properties:
+    #           location: /var/www/certbot
 
     # Describe volumes
     xnat-logs-vol:
-      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
       properties:
-        path: /data/xnat/logs
+        server: 172.31.24.144
+        path: /home/ubuntu/nfs/xnat/logs
     xnat-archive-vol:
-      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
       properties:
-        path: /data/xnat/archive
+        server: 172.31.24.144
+        path: /home/ubuntu/nfs/xnat/archive
     xnat-build-vol:
-      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
       properties:
-        path: /data/xnat/build
+        server: 172.31.24.144
+        path: /home/ubuntu/nfs/xnat/build
+    xnat-db-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 172.31.24.144
+        path: /home/ubuntu/nfs/xnat-db
+    nginx-conf-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 172.31.24.144
+        path: /home/ubuntu/nfs/nginx/conf.d
+    certbot-conf-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 172.31.24.144
+        path: /home/ubuntu/nfs/certbot/conf
+    certbot-www-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 172.31.24.144
+        path: /home/ubuntu/nfs/certbot/www
     docker-socket-vol:
       type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
         path: /var/run/docker.sock
-    postgres-vol:
-      type: tosca.nodes.MiCADO.Container.Volume.HostPath
-      properties:
-        path: /data/xnat-db
-    letsencrypt-vol:
-      type: tosca.nodes.MiCADO.Container.Volume.HostPath
-      properties:
-        path: /data/certbot/conf
-    certbot-vol:
-      type: tosca.nodes.MiCADO.Container.Volume.HostPath
-      properties:
-        path: /data/certbot/www
-    nginx-conf-vol:
-      type: tosca.nodes.MiCADO.Container.Volume.HostPath
-      properties:
-        path: /data/nginx/conf.d
+
 
     # Describe the SSE containers
     sse:
@@ -299,7 +327,7 @@ topology_template:
       - host: ta-server
 
     # Describe server VMs
-    sleep-app-server: *compute_cloud
+    sleep-app-server: *compute_cloud_with_nfs
     sse-server: *compute_cloud
     ta-server: *compute_cloud
       
