@@ -469,6 +469,9 @@ node_types:
       floating_ip_pool:
         type: string
         required: false
+      config_drive:
+        type: boolean
+        required: false
     interfaces:
       Occopus:
         type: tosca.interfaces.MiCADO.Occopus
