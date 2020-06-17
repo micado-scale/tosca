@@ -105,6 +105,7 @@ node_types:
   # Compute (Virtual Machine) node types
   #
   # You can find the following node types below:
+  #   * tosca.nodes.MiCADO.Edge
   #   * tosca.nodes.MiCADO.Compute
   #   * tosca.nodes.MiCADO.CloudSigma.Compute
   #   * tosca.nodes.MiCADO.CloudSigma.Compute.Occo
@@ -119,6 +120,15 @@ node_types:
   #   * tosca.nodes.MiCADO.CloudBroker.Compute
   #   * tosca.nodes.MiCADO.Nova.Compute
   #
+
+  tosca.nodes.MiCADO.Edge:
+    description: Base edge node for MiCADO
+    derived_from: tosca.nodes.Root
+    capabilities:
+      host:
+        type: tosca.capabilities.Compute
+      os:
+        type: tosca.capabilities.OperatingSystem
 
   tosca.nodes.MiCADO.Compute:
     description: Base compute node for MiCADO
@@ -458,6 +468,9 @@ node_types:
         required: false
       floating_ip_pool:
         type: string
+        required: false
+      config_drive:
+        type: boolean
         required: false
     interfaces:
       Occopus:
@@ -1760,5 +1773,7 @@ policy_types:
     properties:
       file_secrets:
         type: map
+        required: false
       text_secrets:
         type: map
+        required: false
