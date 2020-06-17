@@ -3,7 +3,7 @@
 tosca_definitions_version: tosca_simple_yaml_1_0
 
 imports:
-  - https://raw.githubusercontent.com/micado-scale/tosca/v0.9.0/micado_types.yaml
+  - https://raw.githubusercontent.com/micado-scale/tosca/develop/micado_types.yaml
 
 repositories:
   docker_hub: https://hub.docker.com/
@@ -14,18 +14,43 @@ dsl_definitions:
   compute_cloud: &compute_cloud
     type: tosca.nodes.MiCADO.Nova.Compute
     properties:
-      image_id: ADD_YOUR_ID_HERE (e.g. d4f4e496-031a-4f49-b034-f8dafe28e01c)
-      flavor_name: ADD_YOUR_FLAVOUR_ID_HERE (e.g. 3)
-      project_id: ADD_YOUR_ID_HERE (e.g. a678d20e71cb4b9f812a31e5f3eb63b0)
-      network_id: ADD_YOUR_ID_HERE (e.g. 3fd4c62d-5fbe-4bd9-9a9f-c161dabeefde)
-      key_name: ADD_YOUR_KEY_HERE (e.g. keyname)
+      image_id: ADD_IMAGE_ID_HERE (eg. f036474c-9706-4c02-877c-ff648bb19bfa)
+      flavor_name: ADD_FLAVOR_ID_HERE (eg. 2)
+      project_id: ADD_PROJECT_ID_HERE (eg. 98s2d2ba0c724c22bcd53c4a70848989)
+      network_id: ADD_NETWORK_ID_HERE (eg. c9032d43-e378-44ad-876f-97d5479fb87d)
+      network_name: ADD_NETWORK_NAME_HERE (eg. default-net)
+      key_name: ADD_KEY_NAME_HERE (e.g. my_ssh_key)
+      config_drive: OPTIONAL_BOOLEAN_CREATE_METADATA_DRIVE (eg. true)
       security_groups:
-        - ADD_YOUR_ID_HERE (e.g. d509348f-21f1-4723-9475-0cf749e05c33)
+        - ADD_SECURITY_GROUP_ID_HERE (e.g. d2e440c9-f324-411b-b404-e9dd353cl99k)
     interfaces:
       Terraform:
         create:
           inputs:
-            endpoint: ADD_YOUR_ENDPOINT_HERE (e.g https://sztaki.cloud.mta.hu:5000/v3)
+            endpoint: ADD_V3_IDENTITY_ENDPOINT_HERE ( eg. https://cloud.myorg.co.uk:5000/v3 )
+
+  compute_cloud_with_nfs: &compute_cloud_with_nfs
+    type: tosca.nodes.MiCADO.Nova.Compute
+    properties:
+      image_id: ADD_IMAGE_ID_HERE (eg. f036474c-9706-4c02-877c-ff648bb19bfa)
+      flavor_name: ADD_FLAVOR_ID_HERE (eg. 2)
+      project_id: ADD_PROJECT_ID_HERE (eg. 98s2d2ba0c724c22bcd53c4a70848989)
+      network_id: ADD_NETWORK_ID_HERE (eg. c9032d43-e378-44ad-876f-97d5479fb87d)
+      network_name: ADD_NETWORK_NAME_HERE (eg. default-net)
+      key_name: ADD_KEY_NAME_HERE (e.g. my_ssh_key)
+      config_drive: OPTIONAL_BOOLEAN_CREATE_METADATA_DRIVE (eg. true)
+      security_groups:
+        - ADD_SECURITY_GROUP_ID_HERE (e.g. d2e440c9-f324-411b-b404-e9dd353cl99k)
+      context:
+        insert: true
+        cloud_config: |
+          runcmd:
+          - apt-get install -y nfs-common
+    interfaces:
+      Terraform:
+        create:
+          inputs:
+            endpoint: ADD_V3_IDENTITY_ENDPOINT_HERE ( eg. https://cloud.myorg.co.uk:5000/v3 )
 
 topology_template:
   node_templates:
@@ -37,26 +62,27 @@ topology_template:
         image: somnonetz/snet-xnat
         env:
         - name: XNAT_ROOT
-          value:
+          value: /data/xnat
         - name: XNAT_HOME
-          value:
+          value: /data/xnat/home
         - name: XNAT_DATASOURCE_DRIVER
-          value:
+          value: org.postgresql.Driver
         - name: XNAT_DATASOURCE_URL
-          value:
+          value: jdbc:postgresql://xnat-db/xnat
         - name: XNAT_DATASOURCE_USERNAME
-          value:
+          value: xnat
         - name: XNAT_DATASOURCE_PASSWORD
-          value:
+          value: ADD_YOUR_XNAT_DB_PASSWORD_HERE
         - name: XNAT_HIBERNATE_DIALECT
-          value:
+          value: org.hibernate.dialect.PostgreSQL9Dialect
         - name: TOMCAT_XNAT_FOLDER
-          value:
+          value: xnat
         - name: CATALINA_OPTS
-          value: -Xms128m -Xmx2048m -Dxnat.home= -agentlib:jdwp=transport=dt_socket=dt_socket,server=y,suspend=n,address=8000
+          value: -Xms128m -Xmx2048m -Dxnat.home=/data/xnat/home -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000
         - name: PGPASSWORD
-          value:
+          value: ADD_YOUR_XNAT_DB_PASSWORD_HERE
         ports:
+        - target: 8080 
         - containerPort: 8080
       requirements:
       - host: sleep-app-server
@@ -66,8 +92,18 @@ topology_template:
             type: tosca.relationships.AttachesTo
             properties:
               location: /data/xnat/home/logs
-      - volume: xnat-archive-vol
-      - volume: xnat-build-vol
+      - volume:
+          node: xnat-archive-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /data/xnat/archive
+      - volume:
+          node: xnat-build-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /data/xnat/build
       - volume: docker-socket-vol
 
     xnat-db:
@@ -76,17 +112,18 @@ topology_template:
         image: postgres:9.4-alpine
         env:
           - name: POSTGRES_USER
-            value:
+            value: xnat
           - name: POSTGRES_PASSWORD
-            value:
+            value: ADD_YOUR_XNAT_DB_PASSWORD_HERE
           - name: POSTGRES_DB
-            value:
+            value: xnat
         ports:
+        - target: 5432
         - containerPort: 5432
       requirements:
       - host: sleep-app-server
       - volume: 
-          node: postgres-vol
+          node: xnat-db-vol
           relationship:
             type: tosca.relationships.AttachesTo
             properties:
@@ -96,18 +133,17 @@ topology_template:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
         image: somnonetz/snet-nginx
-        args: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
         env:
           - name: XNAT_API_URL
-            value:
+            value: https://xnat.snet-apps.com/xnat/REST
           - name: SSE_SERVER_BASE_URL
-            value:
+            value: https://sse.snet-apps.com
           - name: TA_BASE_URL
-            value:
+            value: https://ta.snet-apps.com
           - name: SALT_VALUE
-            value:
+            value: abc123!?
           - name: IV_VALUE
-            value:
+            value: abcdefg
         ports:
         - containerPort: 80
           hostPort: 80
@@ -115,8 +151,18 @@ topology_template:
           hostPort: 443
       requirements:
       - host: sleep-app-server
-      - volume: letsencrypt-vol
-      - volume: certbot-vol
+      - volume:
+          node: certbot-conf-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /etc/letsencrypt
+      - volume:
+          node: certbot-www-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /var/www/certbot
       - volume: 
           node: nginx-conf-vol
           relationship:
@@ -124,50 +170,66 @@ topology_template:
             properties:
               location: /etc/nginx/conf.d
 
-    certbot:
-      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
-      properties:
-        image: certbot/certbot
-        command: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
-      requirements:
-      - host: sleep-app-server
-      - volume: letsencrypt-vol
-      - volume: certbot-vol
-      - host: cq-server
+    # certbot:
+    #   type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+    #   properties:
+    #     image: certbot/certbot
+    #   requirements:
+    #   - host: sleep-app-server
+    #   - volume:
+    #       node: certbot-conf-vol
+    #       relationship:
+    #         type: tosca.relationships.AttachesTo
+    #         properties:
+    #           location: /etc/letsencrypt
+    #   - volume:
+    #       node: certbot-www-vol
+    #       relationship:
+    #         type: tosca.relationships.AttachesTo
+    #         properties:
+    #           location: /var/www/certbot
 
     # Describe volumes
     xnat-logs-vol:
-      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
       properties:
-        path: /data/xnat/logs
+        server: 10.0.5.146
+        path: /home/ubuntu/nfs/xnat/logs
     xnat-archive-vol:
-      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
       properties:
-        path: /data/xnat/archive
+        server: 10.0.5.146
+        path: /home/ubuntu/nfs/xnat/archive
     xnat-build-vol:
-      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
       properties:
-        path: /data/xnat/build
+        server: 10.0.5.146
+        path: /home/ubuntu/nfs/xnat/build
+    xnat-db-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 10.0.5.146
+        path: /home/ubuntu/nfs/xnat-db
+    nginx-conf-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 10.0.5.146
+        path: /home/ubuntu/nfs/nginx/conf.d
+    certbot-conf-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 10.0.5.146
+        path: /home/ubuntu/nfs/certbot/conf
+    certbot-www-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 10.0.5.146
+        path: /home/ubuntu/nfs/certbot/www
     docker-socket-vol:
       type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
         path: /var/run/docker.sock
-    postgres-vol:
-      type: tosca.nodes.MiCADO.Container.Volume.HostPath
-      properties:
-        path: /data/xnat-db
-    letsencrypt-vol:
-      type: tosca.nodes.MiCADO.Container.Volume.HostPath
-      properties:
-        path: /etc/letsencrypt
-    certbot-vol:
-      type: tosca.nodes.MiCADO.Container.Volume.HostPath
-      properties:
-        path: /var/www/certbot
-    nginx-conf-vol:
-      type: tosca.nodes.MiCADO.Container.Volume.HostPath
-      properties:
-        path: /data/nginx/conf.d
+
 
     # Describe the SSE containers
     sse:
@@ -271,7 +333,7 @@ topology_template:
       - host: ta-server
 
     # Describe server VMs
-    sleep-app-server: *compute_cloud
+    sleep-app-server: *compute_cloud_with_nfs
     sse-server: *compute_cloud
     ta-server: *compute_cloud
       
