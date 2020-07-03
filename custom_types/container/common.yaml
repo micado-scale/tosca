@@ -521,6 +521,10 @@ node_types:
         type: map
         description: map of metadata labels
         required: false
+      path:
+        type: string
+        description: path on disk (and/or default mount path)
+        required: false
       size:
         type: string
         description: overwrite size requirement
