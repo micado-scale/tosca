@@ -510,6 +510,12 @@ node_types:
           relationship: tosca.relationships.AttachesTo
 
 
+  tosca.nodes.MiCADO.Container.Application.Docker.Init:
+    description: Description of an init Docker container for Kubernetes
+    derived_from: tosca.nodes.MiCADO.Container.Application.Docker
+    # No interfaces are defined since an Init container cannot exist alone
+
+
   tosca.nodes.MiCADO.Container.Config:
     description: The base node type for Container configuration stores
     derived_from: tosca.nodes.Root
