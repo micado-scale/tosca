@@ -559,3 +559,18 @@ node_types:
         type: tosca.interfaces.MiCADO.Swarm
       Kubernetes:
         type: tosca.interfaces.MiCADO.Kubernetes
+
+
+relationship_types:
+
+  # In Docker /Swarm the following custom type was used to connect specific
+  # containers over a specific Docker network. It is not used in Kubernetes
+  #   * tosca.relationships.MiCADO.ConnectsTo
+  tosca.relationships.MiCADO.ConnectsTo:
+    description: used to connect containers over a specific Docker network
+    derived_from: tosca.relationships.ConnectsTo
+    properties:
+      network:
+        type: string
+        description: Name of Docker network to connect containers over
+        required: true
