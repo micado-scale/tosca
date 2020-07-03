@@ -87,7 +87,33 @@ node_types:
                 type: Recreate
 
 
+  # TODO: Deprecate this in favour of ...Config.ConfigMap
   tosca.nodes.MiCADO.Container.Config.Kubernetes:
+    description: An abstraction of the config node for Kubernetes ConfigMaps
+    derived_from: tosca.nodes.MiCADO.Container.Config
+    description: base type for Config files
+    properties:
+      data:
+        type: map
+        description: data
+        required: false
+      binaryData:
+        type: map
+        description: datab
+        required: false
+    capabilities:
+      volume:
+        type: tosca.capabilities.Attachment
+    interfaces:
+      Kubernetes:
+        type: tosca.interfaces.MiCADO.Kubernetes
+        create:
+          inputs:
+            data: { get_property: [ SELF, data ] }
+            binaryData: { get_property: [ SELF, binaryData ] }
+
+
+  tosca.nodes.MiCADO.Container.Config.ConfigMap:
     description: An abstraction of the config node for Kubernetes ConfigMaps
     derived_from: tosca.nodes.MiCADO.Container.Config
     description: base type for Config files
