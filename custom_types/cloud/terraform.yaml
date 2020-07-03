@@ -1,5 +1,6 @@
 tosca_definitions_version: tosca_simple_yaml_1_2
 
+
 imports:
 - common.yaml
 
@@ -18,4 +19,3 @@ node_types:
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
         create:
-            

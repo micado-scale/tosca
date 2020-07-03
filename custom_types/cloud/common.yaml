@@ -1,42 +1,22 @@
 tosca_definitions_version: tosca_simple_yaml_1_2
 
-interface_types:
-  tosca.interfaces.MiCADO.Occopus:
-    description: Interface for VM management with Occopus
-    derived_from: tosca.interfaces.node.lifecycle.Standard
-    inputs:
-      endpoint:
-        type: string
-        description: Cloud API endpoint
-        required: false
-      endpoint_cloud:
-        type: string
-        description: Cloud API endpoint DEPRECATED
-        required: false
-      interface_cloud:
-        type: string
-        description: Cloud provider DEPRECATED
-        required: false
-        constraints:
-          - valid_values: [ 'ec2', 'nova', 'cloudsigma', 'cloudbroker' ]
-    create:
-      description: Create a compute node with Occopus
 
-  tosca.interfaces.MiCADO.Terraform:
-    description: Interface for VM management with Terraform
-    derived_from: tosca.interfaces.node.lifecycle.Standard
-    inputs:
-      endpoint:
-        description: Cloud provider endpoint API
+artifact_types:
+
+  tosca.artifacts.CloudInit.Data:
+    description: A possible artifact type for CloudInit files
+    derived_from: tosca.artifacts.Root
+    properties:
+      raw_text:
         type: string
         required: false
-    create:
-      description: Create a compute node with Terraform
+
 
 capability_types:
 
   tosca.capabilities.Compute:
-    description: Defining TOSCA compute capabilities (normative as of V1.1)
+  ## This is normative as of v1.1 but is not recognised by OS tosca-parser
+    description: Defining TOSCA compute capabilities
     derived_from: tosca.capabilities.Container
     properties:
       name:
@@ -62,6 +42,8 @@ capability_types:
         required: false
         constraints:
           - greater_or_equal: 0 MB
+
+
 data_types:
 
   context_type:
@@ -76,18 +58,36 @@ data_types:
       insert:
         type: boolean
         required: false
+      
         
-artifact_types:
+interface_types:
 
-  tosca.artifacts.CloudInit.Data:
-    description: A possible artifact type for CloudInit files
-    derived_from: tosca.artifacts.Root
-    properties:
-      raw_text:
+  tosca.interfaces.MiCADO.Occopus:
+    description: Interface for VM management with Occopus
+    derived_from: tosca.interfaces.node.lifecycle.Standard
+    inputs:
+      endpoint:
+        type: string
+        description: Cloud API endpoint
+        required: false
+    create:
+      description: Create a compute node with Occopus
+
+
+  tosca.interfaces.MiCADO.Terraform:
+    description: Interface for VM management with Terraform
+    derived_from: tosca.interfaces.node.lifecycle.Standard
+    inputs:
+      endpoint:
+        description: Cloud provider endpoint API
         type: string
         required: false
-        
+    create:
+      description: Create a compute node with Terraform
+
+
 node_types:
+
   tosca.nodes.MiCADO.Edge:
     description: Base edge node for MiCADO
     derived_from: tosca.nodes.Root
@@ -96,6 +96,7 @@ node_types:
         type: tosca.capabilities.Compute
       os:
         type: tosca.capabilities.OperatingSystem
+
 
   tosca.nodes.MiCADO.Compute:
     description: Base compute node for MiCADO
@@ -111,6 +112,7 @@ node_types:
         type: tosca.capabilities.OperatingSystem
       scalable:
         type: tosca.capabilities.Scalable
+
 
   tosca.nodes.MiCADO.CloudSigma.Compute:
     description: CloudSigma compute node
@@ -218,6 +220,7 @@ node_types:
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
 
+
   tosca.nodes.MiCADO.Azure.Compute:
     description: Microsoft Azure compute node
     derived_from: tosca.nodes.MiCADO.Compute
@@ -259,6 +262,7 @@ node_types:
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
 
+
   tosca.nodes.MiCADO.CloudBroker.Compute:
     description: CloudBroker compute node
     derived_from: tosca.nodes.MiCADO.Compute
@@ -281,6 +285,7 @@ node_types:
     interfaces:
       Occopus:
         type: tosca.interfaces.MiCADO.Occopus
+
 
   tosca.nodes.MiCADO.Nova.Compute:
     description: Openstack Nova Compute node
@@ -339,4 +344,3 @@ node_types:
         type: tosca.interfaces.MiCADO.Occopus
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
-

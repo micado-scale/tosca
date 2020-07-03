@@ -1,30 +1,5 @@
 tosca_definitions_version: tosca_simple_yaml_1_2
 
-interface_types:
-  tosca.interfaces.MiCADO.Swarm:
-    description: Interface for container orchestration with Docker Swarm
-    derived_from: tosca.interfaces.node.lifecycle.Standard
-    create:
-      description: Orchestrate a container node with Swarm
-
-  tosca.interfaces.MiCADO.Kubernetes:
-    description: Interface for container orchestration with Kubernetes
-    derived_from: tosca.interfaces.node.lifecycle.Standard
-    create:
-      description: Complete/fill the workload spec for Kubernetes
-    configure:
-      description: Complete/fill the PodSpec for Kubernete
-
-
-# TOSCA Capability Types
-#
-# MiCADO uses TOSCA capabilities to define what interoperability &
-# relationships a node can support. No custom types are required,
-# though we here define a TOSCA capability which only joined the
-# normative types in TOSCA Simple Profile v1.1:
-#   * tosca.capabilities.Compute
-#
-
 
 artifact_types:
 
@@ -41,27 +16,231 @@ artifact_types:
       external:
         type: boolean
         required: false
+
+
+data_types:
+
+  deploy_type:
+    description: Available properties for Swarm specific orchestration
+    properties:
+      mode:
+        type: string
+        required: false
+      replicas:
+        type: integer
+        required: false
+      resources:
+        type: resource_type
+        required: false
+      labels:
+        type: map
+        required: false
+      placement:
+        type: placement_type
+        required: false
+      restart_policy:
+        type: map
+        required: false
+      update_config:
+        type: map
+        required: false
+
+
+  resource_type:
+    description: Available fields for Swarm deploy resources
+    properties:
+      cpus:
+        type: string
+        required: false
+      memory:
+        type: string
+        required: false
+
+
+  placement_type:
+    description: Available fields for Swarm deploy placement
+    properties:
+      constraints:
+        required: false
+        type: list
+      preferences:
+        required: false
+        type: list
+
+
+  ports_type:
+    description: |
+      Available properties for the ports setting in a container node.
+
+      Supports Kubernetes flat ServiceSpec (ServiceSpec & ServicePort flattened),
+      ContainerPort spec AND long syntax Docker compose port options
+    properties:
+
+      # Kubernetes ServicePort fields
+      name:
+        desription: Name of port
+        type: string
+        required: false
+      nodePort:
+        description: Kubernetes nodePort assignment (30000-32767)
+        type: integer
+        required: false
+        constraints:
+          - greater_or_equal: 30000
+          - less_or_equal: 32767
+      port:
+        description: Visible port (Kubernetes-style)
+        type: integer
+        required: false
+      protocol:
+        description: Protocol (Swarm & Kubernetes) - SCTP is Kube only
+        type: string
+        required: false
+        constraints:
+        - valid_values:
+          - 'tcp'
+          - 'TCP'
+          - 'udp'
+          - 'UDP'
+          - 'SCTP'
+      targetPort:
+        description: Port inside container (Kubernetes-style)
+        type: string
+        required: false
+
+      # Kubernetes ContainerPort fields
+      containerPort:
+        description: Give more info on exposed ports, omitting this does not prevent the port from being exposed (internally)
+        type: integer
+        required: false
+      hostIP:
+        description: Host IP to bind external port to
+        type: string
+        required: false
+      hostPort:
+        description: port to expose on the host. If HostNetwork then must == ContainerPort
+        type: integer
+        required: false
+
+      # Docker Compose long syntax port options
+      target:
+        description: Port inside container (Swarm-style)
+        type: integer
+        required: false
+      published:
+        description: Visible port (Swarm-style)
+        type: integer
+        required: false
+      mode:
+        description: Port mode *translates to Kubernetes host port*
+        type: string
+        required: false
+        constraints:
+        - valid_values:
+          - 'host'
+          - 'ingress'
+
+      # Kubernetes Service field
+      metadata:
+        description: Kubernetes space for adding metadata (such as service name)
+        type: map
+        required: false
+
+      # Kubernetes ServiceSpec fields
+      clusterIP:
+        description: Kubernetes clusterIP assignment (10.0.0.1/24)
+        type: string
+        required: false
+      externalIPs:
+        description: list of IPs which nodes will also accept traffic for
+        type: list
+        required: false
+      externalName:
+        description: external reference which DNS component will return as a CNAME
+        type: string
+        required: false
+      externalTrafficPolicy:
+        description: route to node-local or cluster-wide endpoints
+        type: string
+        required: false
+      healthCheckNodePort:
+        description: healthcheck for LoadBalancer, node-local mode
+        type: integer
+        required: false
+      loadBalancerIP:
+        description: specify IP for LoadBalancer, if type is LB
+        type: string
+        required: false
+      loadBalancerSourceRanges:
+        description: restrict traffic to specified IPs
+        type: list
+        required: false
+      ports:
+        description: ServicePort definition (also supported in this map (one-level up))
+        type: list
+        required: false
+      publishNotReadyAddresses:
+        description: force publish NotReadyAddresses
+        type: boolean
+        required: false
+      selector:
+        description: overwrite the automatically generated selector of the service
+        type: map
+        required: false
+      sessionAffinity:
+        description: maintain session affinity
+        type: string
+        required: false
+      sessionAffinityConfig:
+        description: configurations of session affinity
+        type: map
+        required: false
+      type:
+        description: The Kubernetes equivalent of mode
+        type: string
+        required: false
+        constraints:
+        - valid_values:
+          - 'ClusterIP'
+          - 'NodePort'
+          - 'LoadBalancer'
+          - 'ExternalName'
+
+
+interface_types:
+
+  tosca.interfaces.MiCADO.Swarm:
+    description: Interface for container orchestration with Docker Swarm
+    derived_from: tosca.interfaces.node.lifecycle.Standard
+    create:
+      description: Orchestrate a container node with Swarm
+
+
+  tosca.interfaces.MiCADO.Kubernetes:
+    description: Interface for container orchestration with Kubernetes
+    derived_from: tosca.interfaces.node.lifecycle.Standard
+    create:
+      description: Complete/fill the manifest for Kubernetes
+
+
 node_types:
+
   tosca.nodes.MiCADO.Container.Application:
     description: |
-      description of a container
+      Generic description of a container
     derived_from: tosca.nodes.Container.Application
 
-  tosca.nodes.MiCADO.Container.Application.Init:
-    description: |
-      description of an Init container
-    derived_from: tosca.nodes.MiCADO.Container.Application
 
   tosca.nodes.MiCADO.Container.Application.Pod:
     description: |
-      description of a Pod container (Kubernetes)
+      "Generic" description of a container enclosure (ie. Kubernetes Pod)
     derived_from: tosca.nodes.MiCADO.Container.Application
+
 
   # Node type for Docker application container
   # This node supports both Docker and Kubernetes style field names
-  # Where possible, especially for common fields, an adaptor will
+  # Where possible, especially for common fields, an adaptor should
   # attempt to translate these fields
-
   tosca.nodes.MiCADO.Container.Application.Docker:
     description: |
       description of a Docker container in the style of a Kubernetes
@@ -72,7 +251,7 @@ node_types:
 
       # Kubernetes style field names
       # These field names are present in the ContainerSpec of a Pod
-      # https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#container-v1-core
+      # https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#container-v1-core
       args:
         description: arguments to pass to entrypoint
         type: list
@@ -264,7 +443,10 @@ node_types:
         type: string
         required: false
 
-    # Fill the artifact with the image property by default
+    # Traditionally, TOSCA recommends specifying the container image
+    # as an artifact. In most cases, this over complicates the authoring
+    # of an ADT. Here we get the image property and abstract that
+    # complexity away from the user
     artifacts:
       image:
         type: tosca.artifacts.Deployment.Image.Container.Docker
@@ -292,7 +474,7 @@ node_types:
       scalable:
         type: tosca.capabilities.Scalable
 
-    # Relationships this node supports
+    # Outward relationships this node supports
     requirements:
       - service:
           capability: tosca.capabilities.Container.Docker
@@ -310,6 +492,7 @@ node_types:
           capability: tosca.capabilities.Attachment
           node: tosca.nodes.MiCADO.Container.Volume
           relationship: tosca.relationships.AttachesTo
+
 
   tosca.nodes.MiCADO.Container.Config:
     description: The base node type for Container configuration stores
@@ -350,142 +533,3 @@ node_types:
         type: tosca.interfaces.MiCADO.Swarm
       Kubernetes:
         type: tosca.interfaces.MiCADO.Kubernetes
-
-data_types:
-  ports_type:
-    description: |
-      Available properties for the ports setting in a container node.
-
-      Supports Kubernetes flat ServiceSpec (ServiceSpec & ServicePort flattened),
-      ContainerPort spec AND long syntax Docker compose port options
-    properties:
-
-      # Kubernetes ServicePort fields
-      name:
-        desription: Name of port
-        type: string
-        required: false
-      nodePort:
-        description: Kubernetes nodePort assignment (30000-32767)
-        type: integer
-        required: false
-        constraints:
-          - greater_or_equal: 30000
-          - less_or_equal: 32767
-      port:
-        description: Visible port (Kubernetes-style)
-        type: integer
-        required: false
-      protocol:
-        description: Protocol (Swarm & Kubernetes) - SCTP is Kube only
-        type: string
-        required: false
-        constraints:
-        - valid_values:
-          - 'tcp'
-          - 'TCP'
-          - 'udp'
-          - 'UDP'
-          - 'SCTP'
-      targetPort:
-        description: Port inside container (Kubernetes-style)
-        type: string
-        required: false
-
-      # Kubernetes ContainerPort fields
-      containerPort:
-        description: Give more info on exposed ports, omitting this does not prevent the port from being exposed (internally)
-        type: integer
-        required: false
-      hostIP:
-        description: Host IP to bind external port to
-        type: string
-        required: false
-      hostPort:
-        description: port to expose on the host. If HostNetwork then must == ContainerPort
-        type: integer
-        required: false
-
-      # Docker Compose long syntax port options
-      target:
-        description: Port inside container (Swarm-style)
-        type: integer
-        required: false
-      published:
-        description: Visible port (Swarm-style)
-        type: integer
-        required: false
-      mode:
-        description: Port mode *translates to Kubernetes host port*
-        type: string
-        required: false
-        constraints:
-        - valid_values:
-          - 'host'
-          - 'ingress'
-
-      # Kubernetes Service field
-      metadata:
-        description: Kubernetes space for adding metadata (such as service name)
-        type: map
-        required: false
-
-      # Kubernetes ServiceSpec fields
-      clusterIP:
-        description: Kubernetes clusterIP assignment (10.0.0.1/24)
-        type: string
-        required: false
-      externalIPs:
-        description: list of IPs which nodes will also accept traffic for
-        type: list
-        required: false
-      externalName:
-        description: external reference which DNS component will return as a CNAME
-        type: string
-        required: false
-      externalTrafficPolicy:
-        description: route to node-local or cluster-wide endpoints
-        type: string
-        required: false
-      healthCheckNodePort:
-        description: healthcheck for LoadBalancer, node-local mode
-        type: integer
-        required: false
-      loadBalancerIP:
-        description: specify IP for LoadBalancer, if type is LB
-        type: string
-        required: false
-      loadBalancerSourceRanges:
-        description: restrict traffic to specified IPs
-        type: list
-        required: false
-      ports:
-        description: ServicePort definition (also supported in this map (one-level up))
-        type: list
-        required: false
-      publishNotReadyAddresses:
-        description: force publish NotReadyAddresses
-        type: boolean
-        required: false
-      selector:
-        description: overwrite the automatically generated selector of the service
-        type: map
-        required: false
-      sessionAffinity:
-        description: maintain session affinity
-        type: string
-        required: false
-      sessionAffinityConfig:
-        description: configurations of session affinity
-        type: map
-        required: false
-      type:
-        description: The Kubernetes equivalent of mode
-        type: string
-        required: false
-        constraints:
-        - valid_values:
-          - 'ClusterIP'
-          - 'NodePort'
-          - 'LoadBalancer'
-          - 'ExternalName'

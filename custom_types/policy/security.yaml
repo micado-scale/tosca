@@ -1,7 +1,7 @@
 tosca_definitions_version: tosca_simple_yaml_1_2
 
-policy_types:
 
+policy_types:
 
   tosca.policies.Security.MiCADO.Network:
     derived_from: tosca.policies.Root
@@ -18,6 +18,7 @@ policy_types:
       target_ports:
         type: list
         required: true
+
 
   tosca.policies.Security.MiCADO.Network.Passthrough:
     derived_from: tosca.policies.Security.MiCADO.Network
@@ -47,6 +48,7 @@ policy_types:
         type: string
         description: Specifies allowed ciphers client side during TLS handshake
         required: false
+
 
   tosca.policies.Security.MiCADO.Network.SmtpProxy:
     derived_from: tosca.policies.Security.MiCADO.Network.L7Proxy
@@ -166,6 +168,7 @@ policy_types:
         type: boolean
         description: Enable unknown commands
         required: false
+
 
   tosca.policies.Security.MiCADO.Network.HttpProxy:
     derived_from: tosca.policies.Security.MiCADO.Network.L7Proxy
@@ -339,6 +342,7 @@ policy_types:
         required: false
         default: 80
 
+
   tosca.policies.Security.MiCADO.Network.HttpURIFilterProxy:
     derived_from: tosca.policies.Security.MiCADO.Network.HttpProxy
     description: Enforce HTTP protocol with regex URL filtering capabilities
@@ -352,9 +356,11 @@ policy_types:
         description: List of regex determining prohibited access to a URL
         required: true
 
+
   tosca.policies.Security.MiCADO.Network.HttpWebdavProxy:
     derived_from: tosca.policies.Security.MiCADO.Network.HttpProxy
     description: Enforce HTTP protocol with request methods for WebDAV
+
 
   tosca.policies.Security.MiCADO.Secret.KubernetesSecretDistribution:
     derived_from: tosca.policies.Root
