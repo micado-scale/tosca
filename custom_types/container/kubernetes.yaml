@@ -51,6 +51,26 @@ node_types:
             kind: DaemonSet
 
 
+  tosca.nodes.MiCADO.Container.Application.Docker.StatefulSet:
+    description: An abstraction of the Docker container node, creates a Kubernetes StatefulSet
+    derived_from: tosca.nodes.MiCADO.Container.Application.Docker
+    artifacts:
+      image:
+        type: tosca.artifacts.Deployment.Image.Container.Docker
+        file: { get_property: [ SELF, image ] }
+        repository: docker_hub
+    interfaces:
+      Kubernetes:
+        type: tosca.interfaces.MiCADO.Kubernetes
+        create:
+          inputs:
+            kind: StatefulSet
+            spec:
+              updateStrategy:
+                type: RollingUpdate
+              podManagementPolicy: Parallel
+
+
   # TODO: Deprecate in favour of ...Container.Application.Pod (common.yaml)
   tosca.nodes.MiCADO.Container.Pod.Kubernetes:
     description: A bare Kubernetes Pod, which supports hosting containers
