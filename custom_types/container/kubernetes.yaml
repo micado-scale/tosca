@@ -51,9 +51,10 @@ node_types:
             kind: DaemonSet
 
 
+  # TODO: Deprecate in favour of ...Container.Application.Pod (common.yaml)
   tosca.nodes.MiCADO.Container.Pod.Kubernetes:
     description: A bare Kubernetes Pod, which supports hosting containers
-    derived_from: tosca.nodes.Container.Runtime
+    derived_from: tosca.nodes.MiCADO.Container.Application.Pod
     properties:
     interfaces:
       Kubernetes:
@@ -73,9 +74,9 @@ node_types:
           relationship: tosca.relationships.HostedOn
 
 
-  tosca.nodes.MiCADO.Container.Pod.Kubernetes.Deployment:
-    description: An abstraction of the above, creates a Deployment
-    derived_from: tosca.nodes.MiCADO.Container.Pod.Kubernetes
+  tosca.nodes.MiCADO.Container.Application.Pod.Deployment:
+    description: An abstraction of a generic Pod, creates a Deployment
+    derived_from: tosca.nodes.MiCADO.Container.Application.Pod
     interfaces:
       Kubernetes:
         type: tosca.interfaces.MiCADO.Kubernetes

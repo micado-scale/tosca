@@ -235,6 +235,22 @@ node_types:
     description: |
       "Generic" description of a container enclosure (ie. Kubernetes Pod)
     derived_from: tosca.nodes.MiCADO.Container.Application
+    interfaces:
+      Kubernetes:
+        type: tosca.interfaces.MiCADO.Kubernetes
+    requirements:
+      - service:
+          capability: tosca.capabilities.Container.Docker
+          node: tosca.nodes.MiCADO.Container.Application.Docker
+          relationship: tosca.relationships.MiCADO.ConnectsTo
+      - container:
+          capability: tosca.capabilities.Container.Docker
+          node: tosca.nodes.MiCADO.Container.Application.Docker
+          relationship: tosca.relationships.HostedOn
+      - host:
+          capability: tosca.capabilities.Compute
+          node: tosca.nodes.MiCADO.Compute
+          relationship: tosca.relationships.HostedOn
 
 
   # Node type for Docker application container
