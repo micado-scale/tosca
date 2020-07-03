@@ -1,0 +1,112 @@
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+- common.yaml
+
+
+node_types:
+
+  # Swarm node types
+
+  # Auxilary node types
+  #
+  # You can find the following node types and their abstractions below:
+  #   * tosca.nodes.MiCADO.network.Network.Docker
+  #
+
+  tosca.nodes.MiCADO.network.Network.Docker:
+    description: Node for creating a new Docker network
+    derived_from: tosca.nodes.network.Network
+    description: description of a Docker network
+    properties:
+      attachable:
+        type: boolean
+        description: is attachable
+        required: false
+      driver:
+        type: string
+        description: network driver
+        required: false
+      external:
+        type: boolean
+        required: false
+      driver_opts:
+        type: map
+        description: network driver options (incl. mtu)
+        required: false
+      ip_version:
+        type: integer
+        required: false
+        default: null
+      dhcp_enabled:
+        type: boolean
+        required: false
+        default: null
+
+# TOSCA Relationship Types
+#
+# MiCADO uses TOSCA relationships to define interoperability between
+# different components of the application. Most interoperability
+# requirements can be defined with these TOSCA normative types:
+#   * tosca.relationships.HostedOn (container-in-pod or container/pod-on-VM)
+#   * tosca.relationships.AttachesTo (volume to container)
+#
+# In Docker Swarm the following custom type was used to connect specific
+# containers over a specific Docker network. It is not used in Kubernetes
+#   * tosca.relationships.MiCADO.ConnectsTo
+#
+relationship_types:
+  tosca.relationships.MiCADO.ConnectsTo:
+    description: used to connect containers over a specific Docker network
+    derived_from: tosca.relationships.ConnectsTo
+    properties:
+      network:
+        type: string
+        description: Name of Docker network to connect containers over
+        required: true
+
+data_types:
+  deploy_type:
+    description: Available properties for Swarm specific orchestration
+    properties:
+      mode:
+        type: string
+        required: false
+      replicas:
+        type: integer
+        required: false
+      resources:
+        type: resource_type
+        required: false
+      labels:
+        type: map
+        required: false
+      placement:
+        type: placement_type
+        required: false
+      restart_policy:
+        type: map
+        required: false
+      update_config:
+        type: map
+        required: false
+
+  resource_type:
+    description: Available fields for Swarm deploy resources
+    properties:
+      cpus:
+        type: string
+        required: false
+      memory:
+        type: string
+        required: false
+
+  placement_type:
+    description: Available fields for Swarm deploy placement
+    properties:
+      constraints:
+        required: false
+        type: list
+      preferences:
+        required: false
+        type: list
