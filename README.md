@@ -12,5 +12,6 @@ These templates describe the application topology and policies for COLA use-case
 These definitions describe policies which can be referenced and abstracted by various ADTs. The location of a policy defintion is referenced in the import section of an ADT, and its defintion is expanded with properties and targets within the policies section of the ADT.
 
 ## micado_types.yaml
+## custom_types/
 ##### Custom type defintions for nodes, relationships, capabilities and data types are defined here
-This file defines all custom types for use with the MiCADO platform. Its location is reference in the import section of an ADT, and the types defined herein can be used as needed within the topology section of the ADT.
+This file imports all custom types for use with the MiCADO platform. Its location is referenced in the import section of an ADT, and the types defined herein can be used as needed within the topology section of the ADT.
