@@ -1,0 +1,41 @@
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/v0.9.0/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+description: ADT for stressng on EC2
+
+topology_template:
+  node_templates:
+    amc:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: uowjay/amc-stroke:latest
+        ports:
+        - port: 80
+          nodePort: 30888 
+
+    worker-node:
+      type: tosca.nodes.MiCADO.EC2.Compute
+      properties:
+        region_name: INSERT_REGION_NAME
+        image_id: INSERT_AMI_ID
+        instance_type: INSERT_INSTANCE_TYPE
+        security_group_ids:
+          - INSERT_SECURITY_GROUP_ID
+        key_name: INSERT_KEY_NAME
+      interfaces:
+        Terraform:
+          create:
+            inputs:
+              root_block_device: {"volume_size": "120"}
+              endpoint: https://ec2.eu-west-2.amazonaws.com    
+  policies:
+    - monitoring:
+        type: tosca.policies.Monitoring.MiCADO
+        properties:
+          enable_container_metrics: true
+          enable_node_metrics: true
