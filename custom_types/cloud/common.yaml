@@ -91,6 +91,10 @@ node_types:
   tosca.nodes.MiCADO.Edge:
     description: Base edge node for MiCADO
     derived_from: tosca.nodes.Root
+    properties:
+      public_ip:
+        type: string
+        required: false
     capabilities:
       host:
         type: tosca.capabilities.Compute
