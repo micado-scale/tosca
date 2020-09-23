@@ -99,6 +99,12 @@ topology_template:
             properties:
               location: /data/xnat/archive
       - volume:
+          node: xnat-auth-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /data/xnat/home/config/auth
+      - volume:
           node: xnat-build-vol
           relationship:
             type: tosca.relationships.AttachesTo
@@ -136,14 +142,16 @@ topology_template:
         env:
           - name: XNAT_API_URL
             value: https://xnat.snet-apps.com/xnat/REST
-          - name: SSE_SERVER_BASE_URL
+          - name: SSE_CLIENT_SSE_SERVER_URL
             value: https://sse.snet-apps.com
-          - name: TA_BASE_URL
+          - name: SSE_CLIENT_TA_URL
             value: https://ta.snet-apps.com
-          - name: SALT_VALUE
+          - name: SSE_CLIENT_SALT_VALUE
             value: abc123!?
-          - name: IV_VALUE
+          - name: SSE_CLIENT_IV_VALUE
             value: abcdefg
+          - name: KEYCLOAK_HOST
+            value: https://keycloak.snet-apps.com/
         ports:
         - containerPort: 80
           hostPort: 80
@@ -169,6 +177,104 @@ topology_template:
             type: tosca.relationships.AttachesTo
             properties:
               location: /etc/nginx/conf.d
+  
+    slapd:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: osixia/openldap
+        env:
+          - name: LDAP_ORGANISATION
+            value: snet
+          - name: LDAP_DOMAIN
+            value: snet.com
+          - name: LDAP_ADMIN_PASSWORD
+            value: ADD_YOUR_LDAP_ADMIN_PASSWORD_HERE
+        ports:
+        - target: 389
+        - containerPort: 389
+      requirements:
+      - host: sleep-app-server
+      - volume: 
+          node: slapd-db-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /var/lib/ldap
+      - volume: 
+          node: slapd-conf-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /etc/ldap/slapd.d
+
+    phpldapadmin:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: osixia/phpldapadmin
+        env:
+          - name: PHPLDAPADMIN_LDAP_HOSTS
+            value: slapd
+          - name: PHPLDAPADMIN_HTTPS
+            value: 'false'
+        ports:
+        - target: 80
+        - containerPort: 80
+      requirements:
+      - host: sleep-app-server
+
+    keycloak:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: quay.io/keycloak/keycloak:11.0.0
+        env:
+          - name: KEYCLOAK_USER
+            value: admin
+          - name: KEYCLOAK_PASSWORD
+            value: ADD_YOUR_KEYCLOAK_PASSWORD_HERE
+          - name: KEYCLOAK_LOGLEVEL
+            value: INFO
+          - name: KEYCLOAK_FRONTEND_URL
+            value: https://keycloak.snet-apps.com/auth
+          - name: DB_VENDOR
+            value: postgres
+          - name: DB_ADDR
+            value: keycloak-db
+          - name: DB_DATABASE
+            value: keycloak
+          - name: DB_USER
+            value: keycloak
+          - name: DB_PASSWORD
+            value: ADD_YOUR_KEYCLOAK_DB_PASSWORD_HERE
+          - name: PGPASSWORD
+            value: ADD_YOUR_KEYCLOAK_DB_PASSWORD_HERE
+        ports:
+        - target: 8080
+        - containerPort: 8080
+      requirements:
+      - host: sleep-app-server
+
+    keycloak-db:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: postgres:9.4-alpine
+        env:
+          - name: POSTGRES_USER
+            value: keycloak
+          - name: POSTGRES_PASSWORD
+            value: ADD_YOUR_KEYCLOAK_DB_PASSWORD_HERE
+          - name: POSTGRES_DB
+            value: keycloak
+        ports:
+        - target: 5432
+        - containerPort: 5432
+      requirements:
+      - host: sleep-app-server
+      - volume: 
+          node: keycloak-db-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /var/lib/postgresql/data
 
     # certbot:
     #   type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
@@ -205,6 +311,11 @@ topology_template:
       properties:
         server: 10.0.5.146
         path: /home/ubuntu/nfs/xnat/build
+    xnat-auth-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 10.0.5.146
+        path: /home/ubuntu/nfs/xnat/auth
     xnat-db-vol:
       type: tosca.nodes.MiCADO.Container.Volume.NFS
       properties:
@@ -225,6 +336,21 @@ topology_template:
       properties:
         server: 10.0.5.146
         path: /home/ubuntu/nfs/certbot/www
+    keycloak-db-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 10.0.5.146
+        path: /home/ubuntu/nfs/keycloak-db
+    slapd-db-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 10.0.5.146
+        path: /home/ubuntu/nfs/slapd/database
+    slapd-conf-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 10.0.5.146
+        path: /home/ubuntu/nfs/slapd/conf
     docker-socket-vol:
       type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
@@ -235,10 +361,9 @@ topology_template:
     sse:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
-        image: uowcpc/asclepios-server:dev
+        image: uowcpc/asclepios-server:0.2_postgres
         ports:
         - target: 8080
-          nodePort: 30808
         env:
         - name: DJANGO_LOGLEVEL
           value: DEBUG
@@ -249,14 +374,26 @@ topology_template:
         - name: DB_USER
           value: sse
         - name: DB_PASSWORD
-          value: sse
+          value: ADD_YOUR_SSE_DB_PASSWORD_HERE
         - name: DB_HOST
           value: sse-db
         - name: DB_PORT
           value: "5432"
         - name: ALLOWED_HOSTS
           value: "*"
-        - name: DJANGO_DEBUG
+        - name: MINIO_ACCESS_KEY
+          value: "minio"
+        - name: MINIO_SECRET_KEY
+          value: "minio123"
+        - name: MINIO_BUCKET_NAME
+          value: "snet"
+        - name: MINIO_URL
+          value: "minio:9000"
+        - name: MINIO_SSL_SECURE
+          value: "false"
+        - name: MINIO_EXPIRE_GET
+          value: "true"
+        - name: MINIO_EXPIRE_PUT
           value: "true"
       requirements:
       - host: sse-server
@@ -271,7 +408,7 @@ topology_template:
         - name: POSTGRES_USER 
           value: sse
         - name: POSTGRES_PASSWORD 
-          value: sse
+          value: ADD_YOUR_SSE_DB_PASSWORD_HERE
         - name: POSTGRES_DB
           value: sse-db
         - name: PGDATA
@@ -283,7 +420,7 @@ topology_template:
     ta:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
-        image: uowcpc/asclepios-ta:dev
+        image: uowcpc/asclepios-ta:0.2_postgres
         ports:
         - target: 8000
         env:
@@ -294,7 +431,7 @@ topology_template:
         - name: DB_USER
           value: ta
         - name: DB_PASSWORD
-          value: ta
+          value: ADD_YOUR_TA_DB_PASSWORD_HERE
         - name: DB_HOST
           value: ta-db 
         - name: DB_PORT
@@ -309,8 +446,6 @@ topology_template:
           value: abc123!?
         - name: IV
           value: abcdefg
-        - name: DJANGO_DEBUG
-          value: "true"
       requirements:
       - host: ta-server
 
@@ -324,7 +459,7 @@ topology_template:
         - name: POSTGRES_USER 
           value: ta
         - name: POSTGRES_PASSWORD 
-          value: ta
+          value: ADD_YOUR_TA_DB_PASSWORD_HERE
         - name: POSTGRES_DB
           value: ta-db
         - name: PGDATA
