@@ -161,7 +161,13 @@ node_types:
     interfaces:
       Occopus:
         type: tosca.interfaces.MiCADO.Occopus
-
+  
+  tosca.nodes.MiCADO.Edge.CloudSigma:
+    description: CS edge node for MiCADO
+    derived_from: tosca.nodes.MiCADO.CloudSigma.Compute
+    interfaces:
+      Occopus:
+        type: tosca.interfaces.MiCADO.Occopus
 
   tosca.nodes.MiCADO.EC2.Compute:
     description: Amazon EC2 compute node
@@ -194,6 +200,14 @@ node_types:
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
 
+  tosca.nodes.MiCADO.Edge.EC2:
+    description: EC2 edge node for MiCADO
+    derived_from: tosca.nodes.MiCADO.EC2.Compute
+    interfaces:
+      Occopus:
+        type: tosca.interfaces.MiCADO.Occopus
+      Terraform:
+        type: tosca.interfaces.MiCADO.Terraform
 
   tosca.nodes.MiCADO.GCE.Compute:
     description: Google Compute Engine compute node
@@ -227,6 +241,12 @@ node_types:
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
 
+  tosca.nodes.MiCADO.Edge.GCE:
+    description: GCE edge node for MiCADO
+    derived_from: tosca.nodes.MiCADO.GCE.Compute
+    interfaces:
+      Terraform:
+        type: tosca.interfaces.MiCADO.Terraform
 
   tosca.nodes.MiCADO.Azure.Compute:
     description: Microsoft Azure compute node
@@ -269,6 +289,12 @@ node_types:
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
 
+  tosca.nodes.MiCADO.Edge.Azure:
+    description: Azure edge node for MiCADO
+    derived_from: tosca.nodes.MiCADO.Azure.Compute
+    interfaces:
+      Terraform:
+        type: tosca.interfaces.MiCADO.Terraform
 
   tosca.nodes.MiCADO.CloudBroker.Compute:
     description: CloudBroker compute node
@@ -293,6 +319,12 @@ node_types:
       Occopus:
         type: tosca.interfaces.MiCADO.Occopus
 
+  tosca.nodes.MiCADO.Edge.CloudBroker:
+    description: CB edge node for MiCADO
+    derived_from: tosca.nodes.MiCADO.CloudBroker.Compute
+    interfaces:
+      Occopus:
+        type: tosca.interfaces.MiCADO.Occopus
 
   tosca.nodes.MiCADO.Nova.Compute:
     description: Openstack Nova Compute node
@@ -352,6 +384,15 @@ node_types:
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
 
+  tosca.nodes.MiCADO.Edge.Nova:
+    description: Base edge node for MiCADO
+    derived_from: tosca.nodes.MiCADO.Nova.Compute
+    interfaces:
+      Occopus:
+        type: tosca.interfaces.MiCADO.Occopus
+      Terraform:
+        type: tosca.interfaces.MiCADO.Terraform
+    
   tosca.nodes.MiCADO.OCI.Compute:
     description: Oracle Cloud Instance compute node
     derived_from: tosca.nodes.MiCADO.Compute
@@ -380,6 +421,13 @@ node_types:
       ssh_keys:
         type: string
         required: false
+    interfaces:
+      Terraform:
+        type: tosca.interfaces.MiCADO.Terraform
+
+  tosca.nodes.MiCADO.Edge.OCI:
+    description: OCI edge node for MiCADO
+    derived_from: tosca.nodes.MiCADO.OCI.Compute
     interfaces:
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
