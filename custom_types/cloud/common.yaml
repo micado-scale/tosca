@@ -58,6 +58,9 @@ data_types:
       insert:
         type: boolean
         required: false
+      path:
+        type: string
+        required: false
       
         
 interface_types:
