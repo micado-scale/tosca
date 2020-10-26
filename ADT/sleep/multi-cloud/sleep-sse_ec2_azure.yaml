@@ -1,0 +1,481 @@
+# Inputs removed
+
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/develop/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+description: ADT for Sleep Healthcare & SSE Scheme Deployment on EC2
+
+dsl_definitions:
+  compute_cloud: &compute_cloud
+    type: tosca.nodes.MiCADO.Edge.Azure
+    properties:
+      resource_group: <RESOURCE_GROUP_NAME> (e.g. test-rg)
+      virtual_network: <VIRTUAL_NETWORK_NAME> (e.g. test-rg-vnet)
+      subnet: <SUBNET_NAME> (e.g. default)
+      network_security_group: (e.g. micado-worker-nsg)
+      image_sku: <UBUNTU_VERSION> (e.g. 18.04-LTS)
+      public_key: <PUBLIC_SSH_KEY> (e.g. ssh-rsa AAAB3N...)
+      size: <VM_SIZE> (e.g. Standard_D2s_v3)
+      context:
+        path: "system/cloud_init_worker_tf_edge.yaml"
+    interfaces:
+      Terraform:
+        create:
+
+  compute_cloud_with_nfs: &compute_cloud_with_nfs
+    type: tosca.nodes.MiCADO.EC2.Compute
+    properties:
+      region_name: ADD_YOUR_REGION_NAME_HERE (e.g. eu-west-1)
+      image_id: ADD_YOUR_IMAGE_ID_HERE (e.g. ami-061a2d878e5754b62)
+      instance_type: ADD_INSTANCE_TYPE_HERE (e.g. t2.small)
+      security_group_ids:
+        - ADD_YOUR_SECURITY_GROUP_ID_HERE (e.g. sg-93d46bf7)
+      key_name: -OPTIONAL- ADD_YOUR_KEY_NAME_HERE (e.g. my_ssh_key)
+      context:
+        insert: true
+        cloud_config: |
+          runcmd:
+          - apt-get install -y nfs-common
+    interfaces:
+      Occopus:
+        create:
+          inputs:
+            endpoint: https://ec2.eu-west-2.amazonaws.com
+
+topology_template:
+  node_templates:
+
+    # Describe the Sleep Healthcare application containers
+    xnat:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: somnonetz/snet-xnat
+        env:
+        - name: XNAT_ROOT
+          value: /data/xnat
+        - name: XNAT_HOME
+          value: /data/xnat/home
+        - name: XNAT_DATASOURCE_DRIVER
+          value: org.postgresql.Driver
+        - name: XNAT_DATASOURCE_URL
+          value: jdbc:postgresql://xnat-db/xnat
+        - name: XNAT_DATASOURCE_USERNAME
+          value: xnat
+        - name: XNAT_DATASOURCE_PASSWORD
+          value: xnatdbpassword
+        - name: XNAT_HIBERNATE_DIALECT
+          value: org.hibernate.dialect.PostgreSQL9Dialect
+        - name: TOMCAT_XNAT_FOLDER
+          value: xnat
+        - name: CATALINA_OPTS
+          value: -Xms128m -Xmx2048m -Dxnat.home=/data/xnat/home -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000
+        - name: PGPASSWORD
+          value: xnatdbpassword
+        ports:
+        - target: 8080 
+        - containerPort: 8080
+      requirements:
+      - host: sleep-app-server
+      - volume:
+          node: xnat-logs-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /data/xnat/home/logs
+      - volume:
+          node: xnat-archive-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /data/xnat/archive
+      - volume:
+          node: xnat-auth-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /data/xnat/home/config/auth
+      - volume:
+          node: xnat-build-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /data/xnat/build
+      - volume: docker-socket-vol
+
+    xnat-db:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: postgres:9.4-alpine
+        env:
+          - name: POSTGRES_USER
+            value: xnat
+          - name: POSTGRES_PASSWORD
+            value: xnatdbpassword
+          - name: POSTGRES_DB
+            value: xnat
+        ports:
+        - target: 5432
+        - containerPort: 5432
+      requirements:
+      - host: sleep-app-server
+      - volume: 
+          node: xnat-db-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /var/lib/postgresql/data
+
+    nginx:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: somnonetz/snet-nginx
+        env:
+          - name: XNAT_API_URL
+            value: https://xnat.snet-apps.com/xnat/REST
+          - name: SSE_CLIENT_SSE_SERVER_URL
+            value: https://sse.snet-apps.com
+          - name: SSE_CLIENT_TA_URL
+            value: https://ta.snet-apps.com
+          - name: SSE_CLIENT_SALT_VALUE
+            value: abc123!?
+          - name: SSE_CLIENT_IV_VALUE
+            value: abcdefg
+          - name: KEYCLOAK_HOST
+            value: https://keycloak.snet-apps.com/
+        ports:
+        - containerPort: 80
+          hostPort: 80
+        - containerPort: 443
+          hostPort: 443
+      requirements:
+      - host: sleep-app-server
+      - volume:
+          node: certbot-conf-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /etc/letsencrypt
+      - volume:
+          node: certbot-www-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /var/www/certbot
+      - volume: 
+          node: nginx-conf-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /etc/nginx/conf.d
+  
+    slapd:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: osixia/openldap
+        env:
+          - name: LDAP_ORGANISATION
+            value: snet
+          - name: LDAP_DOMAIN
+            value: snet.com
+          - name: LDAP_ADMIN_PASSWORD
+            value: ldapadminpassword
+        ports:
+        - target: 389
+        - containerPort: 389
+      requirements:
+      - host: sleep-app-server
+      - volume: 
+          node: slapd-db-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /var/lib/ldap
+      - volume: 
+          node: slapd-conf-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /etc/ldap/slapd.d
+
+    phpldapadmin:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: osixia/phpldapadmin
+        env:
+          - name: PHPLDAPADMIN_LDAP_HOSTS
+            value: slapd
+          - name: PHPLDAPADMIN_HTTPS
+            value: 'false'
+        ports:
+        - target: 80
+        - containerPort: 80
+      requirements:
+      - host: sleep-app-server
+
+    keycloak:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: quay.io/keycloak/keycloak:11.0.0
+        env:
+          - name: KEYCLOAK_USER
+            value: admin
+          - name: KEYCLOAK_PASSWORD
+            value: keycloakpassword
+          - name: KEYCLOAK_LOGLEVEL
+            value: INFO
+          - name: KEYCLOAK_FRONTEND_URL
+            value: https://keycloak.snet-apps.com/auth
+          - name: DB_VENDOR
+            value: postgres
+          - name: DB_ADDR
+            value: keycloak-db
+          - name: DB_DATABASE
+            value: keycloak
+          - name: DB_USER
+            value: keycloak
+          - name: DB_PASSWORD
+            value: keycloakdbpassword
+          - name: PGPASSWORD
+            value: keycloakdbpassword
+        ports:
+        - target: 8080
+        - containerPort: 8080
+      requirements:
+      - host: sleep-app-server
+
+    keycloak-db:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: postgres:9.4-alpine
+        env:
+          - name: POSTGRES_USER
+            value: keycloak
+          - name: POSTGRES_PASSWORD
+            value: keycloakdbpassword
+          - name: POSTGRES_DB
+            value: keycloak
+        ports:
+        - target: 5432
+        - containerPort: 5432
+      requirements:
+      - host: sleep-app-server
+      - volume: 
+          node: keycloak-db-vol
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /var/lib/postgresql/data
+
+    # Describe volumes
+    xnat-logs-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 000.000.000.000
+        path: /home/ubuntu/nfs/xnat/logs
+    xnat-archive-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 000.000.000.000
+        path: /home/ubuntu/nfs/xnat/archive
+    xnat-build-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 000.000.000.000
+        path: /home/ubuntu/nfs/xnat/build
+    xnat-auth-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 000.000.000.000
+        path: /home/ubuntu/nfs/xnat/auth
+    xnat-db-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 000.000.000.000
+        path: /home/ubuntu/nfs/xnat-db
+    nginx-conf-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 000.000.000.000
+        path: /home/ubuntu/nfs/nginx/conf.d
+    certbot-conf-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 000.000.000.000
+        path: /home/ubuntu/nfs/certbot/conf
+    certbot-www-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 000.000.000.000
+        path: /home/ubuntu/nfs/certbot/www
+    keycloak-db-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 000.000.000.000
+        path: /home/ubuntu/nfs/keycloak-db
+    slapd-db-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 000.000.000.000
+        path: /home/ubuntu/nfs/slapd/database
+    slapd-conf-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.NFS
+      properties:
+        server: 000.000.000.000
+        path: /home/ubuntu/nfs/slapd/conf
+    docker-socket-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/run/docker.sock
+
+
+    # Describe the SSE containers
+    sse:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: uowcpc/asclepios-server:0.2_postgres
+        ports:
+        - target: 8080
+        env:
+        - name: DJANGO_LOGLEVEL
+          value: DEBUG
+        - name: TA_SERVER
+          value: "http://ta:8000"
+        - name: DB_NAME
+          value: sse-db
+        - name: DB_USER
+          value: sse
+        - name: DB_PASSWORD
+          value: ssedbpassword
+        - name: DB_HOST
+          value: sse-db
+        - name: DB_PORT
+          value: "5432"
+        - name: ALLOWED_HOSTS
+          value: "*"
+        - name: MINIO_ACCESS_KEY
+          value: "minio"
+        - name: MINIO_SECRET_KEY
+          value: "minio123"
+        - name: MINIO_BUCKET_NAME
+          value: "snet"
+        - name: MINIO_URL
+          value: "minio:9000"
+        - name: MINIO_SSL_SECURE
+          value: "false"
+        - name: MINIO_EXPIRE_GET
+          value: "true"
+        - name: MINIO_EXPIRE_PUT
+          value: "true"
+      requirements:
+      - host: sse-server
+
+    sse-db:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: postgres
+        ports:
+        - target: 5432
+        env:
+        - name: POSTGRES_USER 
+          value: sse
+        - name: POSTGRES_PASSWORD 
+          value: ssedbpassword
+        - name: POSTGRES_DB
+          value: sse-db
+        - name: PGDATA
+          value: /var/lib/postgresql/data
+      requirements:
+      - host: sse-server
+
+    # Describe the TA containers
+    ta:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: uowcpc/asclepios-ta:0.2_postgres
+        ports:
+        - target: 8000
+        env:
+        - name: DJANGO_LOGLEVEL
+          value: DEBUG
+        - name: DB_NAME
+          value: ta-db
+        - name: DB_USER
+          value: ta
+        - name: DB_PASSWORD
+          value: tadbpassword
+        - name: DB_HOST
+          value: ta-db 
+        - name: DB_PORT
+          value: "5432"
+        - name: ALLOWED_HOSTS
+          value: "*"
+        - name: HASH_LENGTH
+          value: "256"
+        - name: KEY_G
+          value: "123"
+        - name: SALT
+          value: abc123!?
+        - name: IV
+          value: abcdefg
+      requirements:
+      - host: ta-server
+
+    ta-db:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: postgres
+        ports:
+        - target: 5432
+        env:
+        - name: POSTGRES_USER 
+          value: ta
+        - name: POSTGRES_PASSWORD 
+          value: tadbpassword
+        - name: POSTGRES_DB
+          value: ta-db
+        - name: PGDATA
+          value: /var/lib/postgresql/data
+      requirements:
+      - host: ta-server
+
+    # Describe server VMs
+    sleep-app-server: *compute_cloud_with_nfs
+    sse-server: *compute_cloud
+    ta-server: *compute_cloud
+      
+  policies:
+  - monitoring:
+      type: tosca.policies.Monitoring.MiCADO
+      properties:
+        enable_container_metrics: true
+        enable_node_metrics: true
+  - scalability:
+        type: tosca.policies.Scaling.MiCADO.Container.Network.xnat
+        targets: [ xnat ]
+        properties:
+          sources:
+          - 000.000.000.000:8080
+          - 000.000.000.000:9100
+          - 000.000.000.000:8080
+          - 000.000.000.000:9100
+          constants:
+            SERVICE_NAME: 'xnat'
+            COOLDOWNPERIOD: 180
+          min_instances: 1
+          max_instances: 5
+policy_types:
+  tosca.policies.Scaling.MiCADO.Container.Network.xnat:
+    derived_from: tosca.policies.Scaling.MiCADO
+    description: base MiCADO policy defining data sources, constants, queries, alerts, limits and rules
+    properties:
+      scaling_rule:
+        type: string
+        description: pre-define scaling rule for container CPU
+        default: |
+          print('Test policy')
+        required: true
