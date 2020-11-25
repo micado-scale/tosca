@@ -431,3 +431,39 @@ node_types:
     interfaces:
       Terraform:
         type: tosca.interfaces.MiCADO.Terraform
+
+  tosca.nodes.MiCADO.EGI.Compute:
+    description: EGI Cloud Instance compute node
+    derived_from: tosca.nodes.MiCADO.Compute
+    properties:
+      auth_url:
+        type: string
+        required: true
+      image_id:
+        type: string
+        required: true
+      flavor_name:
+        type: string
+        required: true
+      network_name:
+        type: string
+        required: true
+      security_groups:
+        type: string
+        required: true
+      ip_pool:
+        type: string
+        required: true
+      public_key:
+        type: string
+        required: true
+    interfaces:
+      Terraform:
+        type: tosca.interfaces.MiCADO.Terraform
+
+  tosca.nodes.MiCADO.Edge.EGI:
+    description: EGI edge node for MiCADO
+    derived_from: tosca.nodes.MiCADO.EGI.Compute
+    interfaces:
+      Terraform:
+        type: tosca.interfaces.MiCADO.Terraform
