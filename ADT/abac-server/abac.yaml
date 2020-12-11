@@ -1,0 +1,71 @@
+tosca_definitions_version: tosca_simple_yaml_1_2
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/develop/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+description: Example ADT for ABAC-Server (ASCLEPIOS)
+
+topology_template:
+  node_templates:
+    abac-server:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        # Location of the docker image. A version tag could be added
+        image: registry.gitlab.com/asclepios-project/abac-authorization/abac-server
+
+        # `port` lets other internal components hit abac-server:7071
+        # `nodePort` exposes this externally on <master_node_ip>:30071
+        ports:
+        - port: 7071
+          nodePort: 30071
+
+        # Reserve at least half a CPU for this container
+        resources:
+          requests:
+            cpu: "500m"
+
+      # Specify host node and share directories with the host
+      requirements:
+        - host: abac-node
+        - volume: abac-logs-vol
+        - volume: abac-config-vol
+        - volume: abac-policy-vol
+
+    abac-logs-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /abac-server/logs
+
+    abac-config-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /abac-server/config
+
+    abac-policy-vol:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /abac-server/policies
+
+    abac-node:
+      type: tosca.nodes.MiCADO.EC2.Compute
+      properties:
+        region_name:
+        image_id:
+        instance_type:
+        key_name:
+        security_group_ids:
+          -
+      interfaces:
+        Occopus:
+          create:
+            inputs:
+              endpoint:
+  policies:
+    - monitoring:
+        type: tosca.policies.Monitoring.MiCADO
+        properties:
+          enable_container_metrics: true
+          enable_node_metrics: true
