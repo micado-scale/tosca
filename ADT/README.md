@@ -38,7 +38,7 @@ The **required** keys are shown in the table in **bold**.
 | *Service*.protocol             | string                       | Protocol to use (TCP / UDP)                                    |
 | resources                      | map[`limits`\|`requests`]... | Please see the relevant section of the [Kubernetes API](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container) for values   |
 
-**Table 1. Required (in bold) and optional metadata for describing containers in MiCADO**
+##### Table 1. Required (in bold) and optional metadata for describing containers in MiCADO
 
 The `type` key determines the specific Kubernetes workload to use to deploy your application.
 Table 2 below shows the most common values for this key. A Kubernetes Deployment (shown in bold)
@@ -50,7 +50,7 @@ is the recommended workload type for most use cases.
 | tosca.nodes.MiCADO.Container.Application.Docker.DaemonSet     | [DaemonSet](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/)- Exactly one replica on each VM                      |
 | tosca.nodes.MiCADO.Container.Application.Docker.StatefulSet   | [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)- Stable identifiers and persistent storage         |
 
-**Table 2. Possible values for `type` key, for specifying the type of Kubernetes workload to deploy**
+##### Table 2. Possible values for `type` key, for specifying the type of Kubernetes workload to deploy
 
 **NOTE** It is possible to inline an **entire** Kubernetes manifest under a special key named `inputs`.
 This is considered an advanced feature for those users with already prepared Kubernetes
@@ -60,7 +60,10 @@ command-line tool, which will create a single ADT out of one or more Kubernetes 
 
 ### Describing virtual machines
 
-The metadata required to describe a virtual machine in MiCADO is dependent on the chosen cloud service provider.
+The metadata required to describe a virtual machine in MiCADO is dependent on the chosen cloud service provider middleware. If working with **EGI**, for example, you'll be describing **OpenStack Nova** compute nodes.
+
+#### OpenStack Nova
+
 The table below shows the metadata available for defining an **OpenStack Nova** Compute Node. The **required** keys
 are shown in Table 3 in **bold**. 
 
@@ -79,4 +82,26 @@ are shown in Table 3 in **bold**.
 | security_groups                | []string                     | List of security group IDs to apply                                  |
 | auth_url                       | string                       | Endpoint of the v3 Identity service                                  |
 
-**Table 3. Required (in bold) and optional metadata for describing OpenStack Nova virtual machines in MiCADO**
+##### Table 3. Required (in bold) and optional metadata for describing OpenStack Nova virtual machines in MiCADO
+
+
+#### AWS EC2
+
+The table below shows the metadata available for defining an **EC2** instance in AWS. The **required** keys
+are shown in Table 4 in **bold**. 
+
+**NOTE** that the required value for the `type` key is given in its description.
+
+| key                            | value (type)                 | description                                                          |
+| ------------------------------ |:----------------------------:| -------------------------------------------------------------------- |
+| **name**                       | **string**                   | **Name of virtual machine**                                          |
+| **type**                       | **string**                   | ***tosca.nodes.MiCADO.EC2.Compute***                                 |
+| **region_name**                | **string**                   | **Name of the AWS region to scope to (eg. us-east-1)**               |
+| **image_id**                   | **string**                   | **ID of VM drive image (Ubuntu 18.04 & 20.04 supported)**            |
+| **instance_type**              | **string**                   | **Name of the instance type to use (eg. t2.small)**                  |
+| key_name                       | string                       | Name of the SSH keypair                                              |
+| security_group_ids             | []string                     | List of security group IDs to apply                                  |
+| subnet_id                      | string                       | ID of the subnet to join                                             |
+| tags                           | map[string]string            | Mapping of additional metadata tags                                  |
+
+##### Table 4. Required (in bold) and optional metadata for describing AWS EC2 virtual machines in MiCADO
