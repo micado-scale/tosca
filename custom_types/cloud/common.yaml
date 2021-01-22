@@ -439,6 +439,9 @@ node_types:
       auth_url:
         type: string
         required: true
+      project_id:
+        type: string
+        required: true
       image_id:
         type: string
         required: true
