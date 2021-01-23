@@ -456,7 +456,7 @@ node_types:
         required: true
       ip_pool:
         type: string
-        required: true
+        required: false
       public_key:
         type: string
         required: true
