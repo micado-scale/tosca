@@ -14,7 +14,10 @@ There are two rules for naming your nodes:
 ### Describing containers
 
 The below table shows the possible metadata for describing a container in MiCADO.
-The **required** keys are shown in the table in **bold**.
+The **required** keys are shown in the table in **bold**. Pay special attention to
+the two optional **topology** keys:
+  - The *hostedOn* key, which restricts a container to run only on a specific VM
+  - The *Service.port* key, which lets containers communicate using internal DNS 
 
 | key                            | value (type)                 | description                                                    |
 | ------------------------------ |:----------------------------:| ---------------------------------------------------------------|
@@ -28,11 +31,11 @@ The **required** keys are shown in the table in **bold**.
 | env                            | []*EnvMap*                   | List of maps for environment variables                         |
 | *EnvMap*.name                  | string                       | Name of environment variable                                   |
 | *EnvMap*.value                 | string                       | Value of environment variable                                  |
-| ports                          | []*Port* or []*Service*      | List of maps for exposed ports                                 |
+| ports                          | [](*Port* or *Service*)      | List of maps for exposed ports                                 |
 | *Port*.containerPort           | int                          | Port to expose on the container IP                             |
 | *Port*.hostPort                | int                          | Port to expose on the host interface                           |
 | *Port*.protocol                | string                       | Protocol to use (TCP / UDP)                                    |
-| *Service*.port                 | int                          | Port to expose, reachable by other containers at <name>:<port> |
+| *Service*.port                 | int                          | Port to expose, reachable by other containers at *NAME*:*PORT* |
 | *Service*.nodePort             | int                          | High-level port to expose on the host (30000-32767)            |
 | *Service*.targetPort           | int                          | Port to target on the pods/containers                          |
 | *Service*.protocol             | string                       | Protocol to use (TCP / UDP)                                    |
