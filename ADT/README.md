@@ -21,18 +21,18 @@ The **required** keys are shown in the table in **bold**.
 | **name**                       | **string**                   | **Name of container**                                          |
 | **type**                       | **string**                   | **MiCADO/Kubernetes type (see possible values in Table 2)**    |
 | **image**                      | **string**                   | **Full name of container image**                               |
-| tolerateMaster                 | boolean                      | Allow this container to run on the master node. Default: False |
+| hostedOn                       | string                       | Name of node to host this container. Defaults to all nodes     |
 | command                        | []string                     | Command to run / entrypoint to the container                   |
 | args                           | []string                     | Arguments to run command / entrypoint                          |
 | labels                         | map[string]string            | Labels to attach to this container                             |
 | env                            | []*EnvMap*                   | List of maps for environment variables                         |
 | *EnvMap*.name                  | string                       | Name of environment variable                                   |
 | *EnvMap*.value                 | string                       | Value of environment variable                                  |
-| ports                          | []*Port* or []*Service*      | List of maps for exposed ports.                                |
+| ports                          | []*Port* or []*Service*      | List of maps for exposed ports                                 |
 | *Port*.containerPort           | int                          | Port to expose on the container IP                             |
 | *Port*.hostPort                | int                          | Port to expose on the host interface                           |
 | *Port*.protocol                | string                       | Protocol to use (TCP / UDP)                                    |
-| *Service*.port                 | int                          | Port to expose with this service                               |
+| *Service*.port                 | int                          | Port to expose, reachable by other containers at <name>:<port> |
 | *Service*.nodePort             | int                          | High-level port to expose on the host (30000-32767)            |
 | *Service*.targetPort           | int                          | Port to target on the pods/containers                          |
 | *Service*.protocol             | string                       | Protocol to use (TCP / UDP)                                    |
