@@ -452,7 +452,7 @@ node_types:
         type: string
         required: true
       security_groups:
-        type: string
+        type: list
         required: true
       ip_pool:
         type: string
