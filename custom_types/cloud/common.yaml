@@ -356,7 +356,7 @@ node_types:
         required: false
       network_id:
         type: string
-        required: true
+        required: false
       server_name:
         type: string
         required: false
