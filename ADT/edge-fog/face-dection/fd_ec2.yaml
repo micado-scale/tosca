@@ -25,6 +25,9 @@ topology_template:
     ip_fog_node:
       type: string
       default: 00.000.000.000
+    ip_pi_node:
+      type: string
+      default: 00.000.000.000
     ip_cloud_node:
       type: string
       default: 000.000.000.000
@@ -159,7 +162,7 @@ topology_template:
     piedge:
       type: tosca.nodes.MiCADO.Edge
       properties:
-        public_ip: 00.000.000.000
+        public_ip: { get_input: ip_pi_node }
     cloudedge:
       type: tosca.nodes.MiCADO.Edge
       properties:
