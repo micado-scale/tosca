@@ -22,7 +22,7 @@ topology_template:
     clientcount:
       type: integer
       default: 1
-    ip_hp_node:
+    ip_fog_node:
       type: string
       default: 00.000.000.000
     ip_cloud_node:
@@ -41,7 +41,7 @@ topology_template:
         - name: LD_LIBRARY_PATH
           value: /opt/vc/lib
         - name: REMOTE_HOST
-          value: { get_input: ip_hp_node }
+          value: { get_input: ip_fog_node }
         - name: REMOTE_PORT
           value: { get_input: [ ports, INDEX ] }
         - name: BUFFER_SIZE
@@ -72,7 +72,7 @@ topology_template:
           hostPort: { get_input: [ ports, INDEX ] }
           protocol: 'UDP'
       requirements:
-      - host: hpedge
+      - host: fogedge
       - volume: docker-edge-images-host-vol
 
     fd-processor:
@@ -83,7 +83,7 @@ topology_template:
         - name: SLEEP_PERIOD
           value: "2.0"
       requirements:
-      - host: hpedge
+      - host: fogedge
       - volume: docker-edge-grey-images-host-vol
       - volume: docker-edge-images-host-vol
 
@@ -103,7 +103,7 @@ topology_template:
         - name: SLEEP_IF_NOTHING_TO_SEND
           value: "2.0"
       requirements:
-      - host: hpedge
+      - host: fogedge
       - volume: docker-edge-grey-images-host-vol
 
     fd-cloud:
@@ -152,10 +152,10 @@ topology_template:
       properties:
         path: /var/lib/fd-cloud/images
 
-    hpedge:
+    fogedge:
       type: tosca.nodes.MiCADO.Edge
       properties:
-        public_ip: { get_input: ip_hp_node }
+        public_ip: { get_input: ip_fog_node }
     piedge:
       type: tosca.nodes.MiCADO.Edge
       properties:
