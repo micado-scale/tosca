@@ -1,5 +1,8 @@
 tosca_definitions_version: tosca_simple_yaml_1_2
 
+metadata:
+  author: Jay DesLauriers
+
 imports:
   - https://raw.githubusercontent.com/micado-scale/tosca/develop/micado_types.yaml
 
@@ -63,6 +66,7 @@ topology_template:
           create:
             inputs:
               endpoint:
+
   policies:
     - monitoring:
         type: tosca.policies.Monitoring.MiCADO
