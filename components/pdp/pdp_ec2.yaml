@@ -1,0 +1,182 @@
+tosca_definitions_version: tosca_simple_yaml_1_2
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/develop/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+description: ADT for PDP component in ASCLEPIOS on EC2
+
+topology_template:
+  node_templates:
+    abac-zuul-proxy:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: registry.gitlab.com/asclepios-project/abac-authorization/abac-zuul-proxy:3.0.2
+        env:
+        - name: SSE_URL
+          value: http://sse:8080/
+        - name: TA_URL
+          value: http://ta:8000/
+        - name: PDP_ENDPOINTS
+          value: https://pdp-server:7071/checkJsonAccessRequest
+        - name: PDP_ACCESS_KEY
+          value: ${ABAC_SERVER_ACCESS_KEY}
+        - name: PDP_TRUSTSTORE_FILE
+          value: /abac-proxy/certs/common-truststore.p12
+        - name: PDP_TRUSTSTORE_TYPE
+          value: PKCS12
+        - name: PDP_TRUSTSTORE_PASSWORD
+          value: ${COMMON_TRUSTSTORE_PASSWORD} 
+        - name: PDP_JWT_SECRET
+          value: ${PDP_JWT_SECRET:-asclepios}
+        - name: PDP_LOAD_BALANCE_METHOD
+          value: ORDER
+        - name: PDP_RETRY_COUNT
+          value: 1
+        - name: KEYCLOAK_ENABLED
+          value: 'true'
+        - name: KEYCLOAK_URL
+          value: ${KEYCLOAK_URL}
+        - name: KEYCLOAK_REALM
+          value: ${KEYCLOAK_REALM}
+        - name: KEYCLOAK_RESOURCE
+          value: ${KEYCLOAK_RESOURCE}        
+        ports:
+        - containerPort: 80
+          hostPort: 80
+      requirements:
+      - host: abac-node
+      - volume:
+          node: proxy-config
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /abac-proxy/config
+      - volume:
+          node: proxy-certs
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /abac-proxy/certs
+
+    proxy-config:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/zuul-proxy
+
+    proxy-certs:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/conf/certs/common
+
+    pdp-server:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: registry.gitlab.com/asclepios-project/abac-authorization/abac-server:latest
+        command:
+        - sh
+        args:
+        - -c
+        - "while [ ! -f certs/.ready ]; do sleep 1; done; cp -f ./certs/pdp-server* ./config/ && ./run.sh"
+        env:
+        - name: ABAC_SERVER_KEYSTORE_FILE
+          value: /abac-server/certs/pdp-server-keystore.p12
+        - name: ABAC_SERVER_KEYSTORE_PASSWORD
+          value: ${ABAC_SERVER_KEYSTORE_PASSWORD}
+        - name: ABAC_SERVER_KEYSTORE_TYPE
+          value: PKCS12
+        - name: ABAC_SERVER_KEY_ALIAS
+          value: pdp-server
+        - name: ABAC_SERVER_ACCESS_KEY
+          value: ${ABAC_SERVER_ACCESS_KEY}
+        - name: ABAC_SERVER_API_KEY
+          value: ${ABAC_SERVER_API_KEY}
+        - name: ABAC_SERVER_JPA_HIBERNATE_DDL_AUTO
+          value: update       
+        ports:
+        - port: 7071
+      requirements:
+      - host: abac-node
+      - volume:
+          node: pdp-certs
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /abac-server/certs
+      - volume:
+          node: pdp-policies
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /abac-server/policies
+
+    pdp-certs:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/conf/certs/pdp-server
+
+    pdp-policies:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/policies
+
+    pdp-server-db:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: mysql:5.5
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: ${PDP_SERVER_MYSQL_ROOT_PASSWORD}
+        - name: MYSQL_DATABASE
+          value: ${PDP_SERVER_MYSQL_DATABASE}
+        - name: MYSQL_USER
+          value: ${PDP_SERVER_MYSQL_USER}
+        - name: MYSQL_PASSWORD
+          value: ${PDP_SERVER_MYSQL_PASSWORD}        
+        ports:
+        - port: 3306
+        livenessProbe:
+          exec:
+            command:
+              - mysql --database=$MYSQL_DATABASE --password=$MYSQL_ROOT_PASSWORD --execute="SELECT count(table_name) > 0 FROM information_schema.tables;" --skip-column-names -B
+          failureThreshold: 4
+          periodSeconds: 30
+          timeoutSeconds: 10
+      requirements:
+      - host: abac-node
+      - volume:
+          node: pdp-mysql
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /var/lib/mysql
+
+    pdp-mysql:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/data/pdp-server-db
+
+    abac-node:
+      type: tosca.nodes.MiCADO.EC2.Compute
+      properties:
+        region_name: ADD_YOUR_REGION_NAME_HERE (e.g. eu-west-2)
+        image_id: ADD_YOUR_IMAGE_ID_HERE (e.g. ami-0194c3e07668a7e36)
+        instance_type: ADD_YOUR_INSTANCE_TYPE_HERE (e.g. t2.medium)
+        key_name: ADD_YOUR_KEY_NAME_HERE (e.g. my_ssh_key)
+        security_group_ids:
+          - ADD_YOUR_SECURITY_GROUP_ID_HERE (e.g. sg-0aa9937e5c34185bc)
+      interfaces:
+        # TERRAFORM: Change key to Terraform
+        Occopus:
+          create:
+            inputs:
+              endpoint: ADD_YOUR_ENDPOINT (e.g. https://ec2.eu-west-2.amazonaws.com)
+      
+  policies:
+    - monitoring:
+        type: tosca.policies.Monitoring.MiCADO
+        properties:
+          enable_container_metrics: true
+          enable_node_metrics: true
