@@ -1,0 +1,81 @@
+tosca_definitions_version: tosca_simple_yaml_1_2
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/develop/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+topology_template:
+  node_templates:
+    cpabe-keys:
+      type: tosca.nodes.MiCADO.Container.Config
+      interfaces:
+        Kubernetes:
+          create:
+            inputs:
+              data:
+                master_key: AAAAFD3/m1YKeHfeHxgRjpmWDmo1SAkwAAAAgJH6Z/MSMNr4yU7VCDw3RlqsiyImXlX2bF9Mzr7EH7iRKFQLPUmZnAcReGThOl8GrFZ5w8WMwdZ+aHnRw52is0pX9WuRZo+fKyyI7jlkNN/wUw2PyD2xUxQQM8vu0bXajNp0Z4PWt4KNGomoqxjgx0erAYlK1i0so1us1y7hE6OA
+                public_key: AAABZ3R5cGUgYQpxIDg3ODA3MTA3OTk2NjMzMTI1MjI0Mzc3ODE5ODQ3NTQwNDk4MTU4MDY4ODMxOTk0MTQyMDgyMTEwMjg2NTMzOTkyNjY0NzU2MzA4ODAyMjI5NTcwNzg2MjUxNzk0MjI2NjIyMjE0MjMxNTU4NTg3Njk1ODIzMTc0NTkyNzc3MTMzNjczMTc0ODEzMjQ5MjUxMjk5OTgyMjQ3OTEKaCAxMjAxNjAxMjI2NDg5MTE0NjA3OTM4ODgyMTM2Njc0MDUzNDIwNDgwMjk1NDQwMTI1MTMxMTgyMjkxOTYxNTEzMTA0NzIwNzI4OTM1OTcwNDUzMTEwMjg0NDgwMjE4MzkwNjUzNzc4Njc3NgpyIDczMDc1MDgxODY2NTQ1MTYyMTM2MTExOTI0NTU3MTUwNDkwMTQwNTk3NjU1OTYxNwpleHAyIDE1OQpleHAxIDEwNwpzaWduMSAxCnNpZ24wIDEKAAAAgFT6/ewlA9ebVp9rH3FrMl8jjcZeIaLqIOUWH0kbC5Cp0duwpkJnBkV2TpbNOK/AzLMtdwlg4PtDH57CtBy+mF0zm0MsWbDDIgriRNWx/1/MP6+VCwg8Tk5K5O113Vcohu00HtF6nEuv+KQ5IN41bKxVBGbfAoSoEA+aajT8SAXAAAAAgCCXNvTwGbcXNCaro0YE3N95dd4OliqTJf5BT9iCD9xm8t94BOnTrDmHb0gao4F6dPF0y254CxeomEGR5k5PlqaYLrm5Ncett7baMSuXjCuPQvC7W/x9wn4PhnC+F7B52vnbgpLbILGKcZJMu3cz+qbEWiQFVI9ty5oPHtC97YV7AAAAgCoaGJCdP4WMmEP3/MvHTkzNH+YuOpwOwKnoN+y+6IZEVjT1Nm2MnRB6gyhz4QWVexk0UTXzWAb5M4lp/6lM0hUaSOxv49rufJeeHsGUBMO7rXpkhjn4sHFAKYP/tvfJPLDSH7rFmNf3z6Pmc3SA2O00w0MWcoprOuO8fjQSaZG+AAAAgJ1bhn48TUZEH+Puv313gB2ujD/WPNmr8GMR991JtGiG8L/WgUqPNHpX4PLmzkDhO6a8Wt5h3unMuI9jMsUjX7oTng6I7DQTnE15Ws9jo8caTNAq/iCxfzNGlbaB6VGFI04K+TSGuCfdCmYTQ2biiIrjgM03yMUTxsUB8F9W57ty
+
+    registration-auth:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+    
+      properties:
+        image: registry.gitlab.com/asclepios-project/registration-authority-cpabe:edit-psw-fixes
+        env:
+        - name: MODE
+          value: dev
+        - name: PORT
+          value: "8085"
+        - name: AZ_SERVER_ENDPOINTS
+          value: https://pdp-server:7071/checkJsonAccessRequest
+        - name: KEYCLOAK_URL
+          value: ${KEYCLOAK_URL}
+        - name: KEYCLOAK_REALM
+          value: ${KEYCLOAK_REALM}
+        - name: KEYCLOAK_CLIENT 
+          value: ${KEYCLOAK_RESOURCE}
+        - name: VUE_ALLOWED_ORIGINS 
+          value: http://localhost:8080
+        - name: VUE_ALLOWED_IP 
+          value: localhost
+        - name: KEYCLOAK_ADMIN_USERNAME 
+          value: ${KEYCLOAK_USER}
+        - name: KEYCLOAK_ADMIN_PASSWORD 
+          value: ${KEYCLOAK_PASSWORD}
+        ports:
+        - containerPort: 8085
+          hostPort: 8085
+      requirements:
+      - volume:
+          node: cpabe-keys
+          relationship: 
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /cpabe/demo/cpabe
+    
+      
+    worker-node:
+      type: tosca.nodes.MiCADO.EC2.Compute
+      properties:
+        region_name: eu-west-2
+        image_id: ami-0194c3e07668a7e36
+        instance_type: t2.small
+        key_name: test-key
+        security_group_ids:
+          - sg-02f2ecccacd4bd0a8
+
+      interfaces:
+        # TERRAFORM: Change key to Terraform
+        Occopus:
+          create:
+            inputs:
+              endpoint: https://ec2.eu-west-2.amazonaws.com
+      
+  policies:
+    - monitoring:
+        type: tosca.policies.Monitoring.MiCADO
+        properties:
+          enable_container_metrics: true
+          enable_node_metrics: true
