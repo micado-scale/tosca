@@ -10,7 +10,6 @@ description: ADT for ABAC component in ASCLEPIOS on EC2
 
 topology_template:
   node_templates:
-    #keycloak server
     keycloak:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
@@ -51,11 +50,12 @@ topology_template:
             type: tosca.relationships.AttachesTo
             properties:
               location: /opt/jboss/keycloak/imports
+              
     keycloak-conf-volume:
       type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
         path: /var/lib/conf #- ./conf:/opt/jboss/keycloak/imports:ro
-    #keycloak database
+    
     keycloak-db:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
@@ -91,25 +91,24 @@ topology_template:
       type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
         path: /var/lib/data/keycloak-db #- ./data/keycloak-db:/var/lib/mysql
-    #MiCADO worker node
-    keycloak-node: #Nova
+        
+    keycloak-node:
       type: tosca.nodes.MiCADO.Nova.Compute
       properties:
-        image_id: 9ec073d4-743d-4c7a-98eb-5be18d937d52
-        flavor_name: m1.medium
-        project_id: bedf16b8b98e41ea80ba3d1680b9d317
-        network_id: c4a7ce20-5f68-4f48-9deb-3c2c6b52f397
-        config_drive: true
-        key_name: james-htw-key
+        image_id: ADD_YOUR_ID_HERE (e.g. 6bba6dc3-b6d5-4b15-942e-61e0ef2f93cb)
+        flavor_name: ADD_YOUR_FLAVOUR_ID_HERE (e.g. 3)
+        project_id: ADD_YOUR_ID_HERE (e.g. a678d20e71cb4b9f812a31e5f3eb63b0)
+        network_id: ADD_YOUR_ID_HERE (e.g. 3fd4c62d-5fbe-4bd9-9a9f-c161dabeefde)
+        key_name: ADD_YOUR_KEY_HERE (e.g. keyname)
         security_groups:
-          - 94fa5200-7e4f-4e18-9df7-efb75e2c1d5e #MiCADO-worker UOW ONLY
-          - d2ad0c7c-5f3a-4732-a04a-3885b5e5866a #default
+          - ADD_YOUR_ID_HERE (e.g. d509348f-21f1-4723-9475-0cf749e05c33)
       interfaces:
-        Terraform:
+        # TERRAFORM: Change to Terraform and provide network_name in the inputs below
+        Occopus:
           create:
             inputs:
-              network_name: cpc-dev_net
-              endpoint: https://api1.cse.westminster.ac.uk:5000/v3
+              #network_name: ADD_YOUR_NETWORK_NAME (e.g. default-net)
+              endpoint: ADD_YOUR_ENDPOINT (e.g https://sztaki.cloud.mta.hu:5000/v3)
 
       
   policies:
