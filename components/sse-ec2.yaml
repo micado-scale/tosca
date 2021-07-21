@@ -1,0 +1,224 @@
+tosca_definitions_version: tosca_simple_yaml_1_2
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/develop/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+description: ADT for Symmetric Searchable Encryption scheme in ASCLEPIOS on EC2
+
+topology_template:
+  node_templates:
+    #SSE database
+    sse-db:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: postgres:12
+        env:
+        - name: POSTGRES_USER
+          value: "SSE_SERVER_DB_USER" #${SSE_SERVER_DB_USER}
+        - name: POSTGRES_PASSWORD
+          value: "SSE_SERVER_DB_PASSWORD" #${SSE_SERVER_DB_PASSWORD}
+        - name: POSTGRES_DB
+          value: "sse-db" #${SSE_SERVER_DB_NAME}
+        - name: PGDATA
+          value: "/var/lib/postgresql/data"     
+        ports:
+        - port: 5432
+      requirements:
+      - host: sse-node
+      - volume:
+          node: sse-db-volume
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /var/lib/postgresql/data
+      - volume:
+          node: sse-db-config-volume
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /docker-entrypoint-initdb.d
+    sse-db-volume:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/data/sse-db #./data/sse-db:/var/lib/postgresql/data
+    sse-db-config-volume:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/conf #./conf/sse.sql:/docker-entrypoint-initdb.d/sse.sql
+    #SSE server
+    sse:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: registry.gitlab.com/asclepios-project/symmetric-searchable-encryption-server:0.6
+        env:
+        - name: DJANGO_LOGLEVEL
+          value: "INFO" #${SSE_SERVER_DJANGO_LOGLEVEL}
+        - name: ALLOWED_HOSTS
+          value: "*" #${SSE_SERVER_ALLOWED_HOSTS}
+        - name: DJANGO_DEBUG 
+          value: "False" #${SSE_SERVER_DJANGO_DEBUG}
+        - name: DJANGO_SECRET_KEY
+          value:  "iry^8h)e*$brnau$5qnbw%$wn+#$@&a0p2@ts+dliqve*%gp8l" #${SSE_SERVER_DJANGO_SECRET_KEY} 
+        - name: TA_SERVER
+          value: "http://ta:8000" #${SSE_SERVER_TA_SERVER}
+        - name: DB_NAME
+          value: "sse-db" #${SSE_SERVER_DB_NAME}
+        - name: DB_USER
+          value: "SSE_SERVER_DB_USER" #${SSE_SERVER_DB_USER}
+        - name: DB_PASSWORD
+          value: "SSE_SERVER_DB_PASSWORD" #${SSE_SERVER_DB_PASSWORD}
+        - name: DB_HOST
+          value: "sse-db" #${SSE_SERVER_DB_HOST}
+        - name: DB_PORT
+          value: "5432" #${SSE_SERVER_DB_PORT}
+        - name: MINIO_ACCESS_KEY
+          value: "MINIO_ACCESS_KEY" #${MINIO_ACCESS_KEY}
+        - name: MINIO_SECRET_KEY
+          value: "MINIO_SECRET_KEY" #${MINIO_SECRET_KEY}                     
+        - name: MINIO_BUCKET_NAME
+          value: "MINIO_BUCKET_NAME" #${MINIO_BUCKET_NAME} 
+        - name: MINIO_URL
+          value: "minio:9000" #${MINIO_URL}
+        - name: MINIO_SSL_SECURE
+          value: "false" #${MINIO_SSL_SECURE}               
+        - name: MINIO_EXPIRE_GET
+          value: "1" #${MINIO_EXPIRE_GET} 
+        - name: MINIO_EXPIRE_PUT
+          value: "1" #${MINIO_EXPIRE_PUT}                      
+        ports:
+        - port: 8080
+      requirements:
+      - host: sse-node
+    #TA database
+    ta-db:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: postgres:12
+        env:
+        - name: POSTGRES_USER
+          value: "TA_DB_USER" #${TA_DB_USER}
+        - name: POSTGRES_PASSWORD
+          value: "TA_DB_PASSWORD" #${TA_DB_PASSWORD}
+        - name: POSTGRES_DB
+          value: "ta-db" #${TA_DB_NAME}
+        - name: PGDATA
+          value: "/var/lib/postgresql/data"     
+        ports:
+        - port: 5432
+      requirements:
+      - host: sse-node    
+      - volume:
+          node: ta-db-volume
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /var/lib/postgresql/data
+      - volume:
+          node: ta-db-config-volume
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /docker-entrypoint-initdb.d
+    ta-db-volume:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/data/ta-db #./data/ta-db:/var/lib/postgresql/data
+    ta-db-config-volume:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/conf #./conf/ta.sql:/docker-entrypoint-initdb.d/ta.sql
+    #TA server
+    ta:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: registry.gitlab.com/asclepios-project/sseta:0.5
+        env:
+        - name: DJANGO_LOGLEVEL
+          value: "INFO" #${TA_DJANGO_LOGLEVEL}
+        - name: DJANGO_DEBUG 
+          value: "False" #${TA_DJANGO_DEBUG}
+        - name: DJANGO_SECRET_KEY
+          value:  "iry^8h)e*$brnau$5qnbw%$wn+#$@&a0p2@ts+dliqve*%gp8l" #${TA_DJANGO_SECRET_KEY}
+        - name: DB_NAME
+          value: "ta-db" #${TA_DB_NAME}
+        - name: DB_USER
+          value: "TA_DB_USER" #${TA_DB_USER}
+        - name: DB_PASSWORD
+          value: "SSE_SERVER_DB_PASSWORD" #${SSE_SERVER_DB_PASSWORD}
+        - name: DB_HOST
+          value: "ta-db" #${TA_DB_HOST}
+        - name: DB_PORT
+          value: "5432" #${TA_DB_PORT}
+        - name: ALLOWED_HOSTS
+          value: "*" #${TA_ALLOWED_HOSTS}
+        - name: HASH_LENGTH
+          value: "256" #${TA_HASH_LENGTH}                     
+        - name: IV
+          value: "TA_IV" #${TA_IV} 
+        - name: MODE
+          value: "" #${TA_MODE}
+        - name: KS
+          value: "TA_MODE" #${TA_KS}               
+        - name: TEEP_SERVER
+          value: "TA_TEEP_SERVER" #${TA_TEEP_SERVER} 
+        - name: SGX
+          value: "TA_SGX" #${TA_SGX}                      
+        ports:
+        - port: 8080
+      requirements:
+      - host: sse-node
+    #MINIO server
+    minio:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: minio/minio
+        command: 
+           - /bin/bash
+           - -c
+           - minio server /data
+        env:
+        - name: MINIO_ACCESS_KEY
+          value: "MINIO_ACCESS_KEY" #${MINIO_ACCESS_KEY}
+        - name: MINIO_SECRET_KEY 
+          value: "MINIO_SECRET_KEY" #${MINIO_SECRET_KEY}                    
+        ports:
+        - containerPort: 9000
+          hostPort: 9000
+      requirements:
+      - host: sse-node  
+      - volume:
+          node: minio-volume
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /data
+    minio-volume:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/data/minio #./data/minio:/data
+    #MiCADO worker node
+    sse-node: #AWS
+      type: tosca.nodes.MiCADO.EC2.Compute
+      properties:
+        region_name: eu-west-2
+        image_id: ami-0194c3e07668a7e36
+        instance_type: t2.medium
+        key_name: Dimitris-key
+        security_group_ids:
+          - sg-075395b33ac05ee99
+      interfaces:
+        # TERRAFORM: Change key to Terraform
+        Occopus:
+          create:
+            inputs:
+              endpoint: https://ec2.eu-west-2.amazonaws.com
+      
+  policies:
+    - monitoring:
+        type: tosca.policies.Monitoring.MiCADO
+        properties:
+          enable_container_metrics: true
+          enable_node_metrics: true

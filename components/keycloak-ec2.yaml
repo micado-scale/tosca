@@ -1,0 +1,116 @@
+tosca_definitions_version: tosca_simple_yaml_1_2
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/develop/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+description: ADT for ABAC component in ASCLEPIOS on EC2
+
+topology_template:
+  node_templates:
+    #keycloak server
+    keycloak:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: jboss/keycloak:12.0.4
+        command: 
+           - /bin/bash
+           - -c
+           - /opt/jboss/keycloak/bin/add-user-keycloak.sh -r master -u $$KEYCLOAK_ADMIN_USER -p $$KEYCLOAK_ADMIN_PASSWORD && /opt/jboss/tools/docker-entrypoint.sh -b 0.0.0.0 -Djboss.http.port=8181
+        env:
+        - name: KEYCLOAK_ADMIN_USER
+          value: "KEYCLOAK_USER" #${KEYCLOAK_USER}
+        - name: KEYCLOAK_ADMIN_PASSWORD
+          value: "KEYCLOAK_PASSWORD" #${KEYCLOAK_PASSWORD}
+        - name: KEYCLOAK_FRONTEND_URL
+          value: "http://127.0.0.1:8181" #${KEYCLOAK_URL}
+        - name: PROXY_ADDRESS_FORWARDING
+          value: "true"
+        - name: DB_VENDOR
+          value: mysql
+        - name: DB_ADDR
+          value: keycloak-db
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_DATABASE
+          value: "KEYCLOAK_MYSQL_DATABASE" #${KEYCLOAK_MYSQL_DATABASE}
+        - name: DB_USER
+          value: "root" #${KEYCLOAK_MYSQL_USER}
+        - name: DB_PASSWORD
+          value: "KEYCLOAK_MYSQL_ROOT_PASSWORD" #${KEYCLOAK_MYSQL_PASSWORD}  
+        ports:
+        - containerPort: 8181
+          hostPort: 8181
+      requirements:
+      - host: keycloak-node
+      - volume:
+          node: keycloak-conf-volume
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /opt/jboss/keycloak/imports
+    keycloak-conf-volume:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/conf #- ./conf:/opt/jboss/keycloak/imports:ro
+    #keycloak database
+    keycloak-db:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: mysql:5.5
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "KEYCLOAK_MYSQL_ROOT_PASSWORD" #${KEYCLOAK_MYSQL_ROOT_PASSWORD}
+        - name: MYSQL_DATABASE
+          value: "KEYCLOAK_MYSQL_DATABASE" #${KEYCLOAK_MYSQL_DATABASE}
+        - name: MYSQL_USER
+          value: "KEYCLOAK_MYSQL_USER" #${KEYCLOAK_MYSQL_USER}
+        - name: MYSQL_PASSWORD
+          value: "KEYCLOAK_MYSQL_PASSWORD" #${KEYCLOAK_MYSQL_PASSWORD}      
+        livenessProbe:
+          exec:
+            command:
+              - /bin/bash
+              - -c
+              - mysql --database=$$MYSQL_DATABASE --password=$$MYSQL_ROOT_PASSWORD --execute="SELECT count(table_name) > 0 FROM information_schema.tables;" --skip-column-names -B
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        ports:
+        - port: 3306
+      requirements:
+      - host: keycloak-node
+      - volume:
+          node: keycloak-mysql-volume
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /var/lib/mysql
+    keycloak-mysql-volume:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/data/keycloak-db #- ./data/keycloak-db:/var/lib/mysql
+    #MiCADO worker node
+    keycloak-node: #AWS
+      type: tosca.nodes.MiCADO.EC2.Compute
+      properties:
+        region_name: eu-west-2
+        image_id: ami-0194c3e07668a7e36
+        instance_type: t2.medium
+        key_name: Dimitris-key
+        security_group_ids:
+          - sg-075395b33ac05ee99
+      interfaces:
+        # TERRAFORM: Change key to Terraform
+        Occopus:
+          create:
+            inputs:
+              endpoint: https://ec2.eu-west-2.amazonaws.com
+      
+  policies:
+    - monitoring:
+        type: tosca.policies.Monitoring.MiCADO
+        properties:
+          enable_container_metrics: true
+          enable_node_metrics: true

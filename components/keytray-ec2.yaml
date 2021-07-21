@@ -1,0 +1,123 @@
+tosca_definitions_version: tosca_simple_yaml_1_2
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/develop/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+description: ADT for KeyTray component in ASCLEPIOS on EC2
+
+topology_template:
+  node_templates:
+    #keytray database
+    keytray-db:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: mysql:5.5
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "KEYTRAY_MYSQL_ROOT_PASSWORD" #${KEYTRAY_MYSQL_ROOT_PASSWORD}
+        - name: MYSQL_DATABASE
+          value: "KEYTRAY_MYSQL_DATABASE" #${KEYTRAY_MYSQL_DATABASE}   
+        ports:
+        - port: 3306
+      requirements:
+      - host: keytray-node
+      - volume:
+          node: keytray-mysql-volume
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /var/lib/mysql
+      - volume:
+          node: keytray-mysql-config-volume
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /docker-entrypoint-initdb.d
+    keytray-mysql-volume:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/data/keytray-db #- ./data/keytray-db:/var/lib/mysql
+    keytray-mysql-config-volume:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/conf #- ./conf/keytray.sql:/docker-entrypoint-initdb.d/keytray.sql:ro
+    #key tray server
+    keytray:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: registry.gitlab.com/asclepios-project/keytray_v2:0.0.6_http
+        env:
+        - name: PORT
+          value: "8083"
+        - name: DATABASE_IP
+          value: "keytray-db"
+        - name: DATABASE_PORT
+          value: "3306"
+        - name: DATABASE_DB
+          value: "KEYTRAY_MYSQL_DATABASE" #${KEYTRAY_MYSQL_DATABASE}   
+        - name: DATABASE_USERNAME
+          value: "root"
+        - name: DATABASE_PSW
+          value: "KEYTRAY_MYSQL_ROOT_PASSWORD" #${KEYTRAY_MYSQL_ROOT_PASSWORD}
+        - name: KEYCLOAK_URL
+          value: "http://keycloak:8181" #${KEYCLOAK_URL}
+        - name: KEYCLOAK_REALM
+          value: "KEYCLOAK_REALM" #${KEYCLOAK_REALM}
+        - name: KEYCLOAK_CLIENT
+          value: "KEYCLOAK_RESOURCE" #${KEYCLOAK_RESOURCE}
+        #- name: KEYCLOAK_SECRET
+        #  value: ${KEYCLOAK_RESOURCE_SECRET} 
+        - name: AZ_SERVER_ENDPOINTS
+          value: "https://pdp-server:7071/checkJsonAccessRequest" 
+        #- name: KEYSTORE
+        #  value: keytray/keystore.p12  
+        #- name: KEYSTORE_PSW
+        #  value: asclepios
+        #- name: KEYSTORE_TYPE
+        #  value: PKCS12 
+        #- name: KEY_ALIAS
+        #  value: snet 
+        #- name: KEY_PSW
+        #  value: asclepios
+        ports:
+        - containerPort: 8083
+          hostPort: 8083
+      requirements:
+      - host: keytray-node
+      - volume:
+          node: keytray-config-volume
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /keytray
+    keytray-config-volume:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/conf/certs/common/ # - ./conf/certs/common/common-truststore.p12:/keytray/truststore-client.p12
+
+    #MiCADO worker node
+    keytray-node: #AWS
+      type: tosca.nodes.MiCADO.EC2.Compute
+      properties:
+        region_name: eu-west-2
+        image_id: ami-0194c3e07668a7e36
+        instance_type: t2.medium
+        key_name: Dimitris-key
+        security_group_ids:
+          - sg-075395b33ac05ee99
+      interfaces:
+        # TERRAFORM: Change key to Terraform
+        Occopus:
+          create:
+            inputs:
+              endpoint: https://ec2.eu-west-2.amazonaws.com
+      
+  policies:
+    - monitoring:
+        type: tosca.policies.Monitoring.MiCADO
+        properties:
+          enable_container_metrics: true
+          enable_node_metrics: true
