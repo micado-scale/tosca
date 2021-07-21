@@ -10,7 +10,6 @@ description: ADT for Symmetric Searchable Encryption scheme in ASCLEPIOS on EC2
 
 topology_template:
   node_templates:
-    #SSE database
     sse-db:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
@@ -40,15 +39,17 @@ topology_template:
             type: tosca.relationships.AttachesTo
             properties:
               location: /docker-entrypoint-initdb.d
+              
     sse-db-volume:
       type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
         path: /var/lib/data/sse-db #./data/sse-db:/var/lib/postgresql/data
+        
     sse-db-config-volume:
       type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
         path: /var/lib/conf #./conf/sse.sql:/docker-entrypoint-initdb.d/sse.sql
-    #SSE server
+        
     sse:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
@@ -92,7 +93,7 @@ topology_template:
         - port: 8080
       requirements:
       - host: sse-node
-    #TA database
+      
     ta-db:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
@@ -122,15 +123,17 @@ topology_template:
             type: tosca.relationships.AttachesTo
             properties:
               location: /docker-entrypoint-initdb.d
+              
     ta-db-volume:
       type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
         path: /var/lib/data/ta-db #./data/ta-db:/var/lib/postgresql/data
+        
     ta-db-config-volume:
       type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
         path: /var/lib/conf #./conf/ta.sql:/docker-entrypoint-initdb.d/ta.sql
-    #TA server
+        
     ta:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
@@ -170,7 +173,7 @@ topology_template:
         - port: 8080
       requirements:
       - host: sse-node
-    #MINIO server
+      
     minio:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
@@ -195,26 +198,27 @@ topology_template:
             type: tosca.relationships.AttachesTo
             properties:
               location: /data
+              
     minio-volume:
       type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
         path: /var/lib/data/minio #./data/minio:/data
-    #MiCADO worker node
-    sse-node: #AWS
+        
+    sse-node:
       type: tosca.nodes.MiCADO.EC2.Compute
       properties:
-        region_name: eu-west-2
-        image_id: ami-0194c3e07668a7e36
-        instance_type: t2.medium
-        key_name: Dimitris-key
+        region_name: ADD_YOUR_REGION_NAME_HERE (e.g. eu-west-2)
+        image_id: ADD_YOUR_IMAGE_ID_HERE (e.g. ami-0194c3e07668a7e36)
+        instance_type: ADD_YOUR_INSTANCE_TYPE_HERE (e.g. t2.medium)
+        key_name: ADD_YOUR_KEY_NAME_HERE (e.g. my_ssh_key)
         security_group_ids:
-          - sg-075395b33ac05ee99
+          - ADD_YOUR_SECURITY_GROUP_ID_HERE (e.g. sg-0aa9937e5c34185bc)
       interfaces:
         # TERRAFORM: Change key to Terraform
         Occopus:
           create:
             inputs:
-              endpoint: https://ec2.eu-west-2.amazonaws.com
+              endpoint: ADD_YOUR_ENDPOINT (e.g. https://ec2.eu-west-2.amazonaws.com)
       
   policies:
     - monitoring:
