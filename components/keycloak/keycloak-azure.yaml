@@ -1,0 +1,114 @@
+tosca_definitions_version: tosca_simple_yaml_1_2
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/develop/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+description: ADT for ABAC component in ASCLEPIOS on EC2
+
+topology_template:
+  node_templates:
+    #keycloak server
+    keycloak:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: jboss/keycloak:12.0.4
+        command: 
+           - /bin/bash
+           - -c
+           - /opt/jboss/keycloak/bin/add-user-keycloak.sh -r master -u $$KEYCLOAK_ADMIN_USER -p $$KEYCLOAK_ADMIN_PASSWORD && /opt/jboss/tools/docker-entrypoint.sh -b 0.0.0.0 -Djboss.http.port=8181
+        env:
+        - name: KEYCLOAK_ADMIN_USER
+          value: "KEYCLOAK_USER" #${KEYCLOAK_USER}
+        - name: KEYCLOAK_ADMIN_PASSWORD
+          value: "KEYCLOAK_PASSWORD" #${KEYCLOAK_PASSWORD}
+        - name: KEYCLOAK_FRONTEND_URL
+          value: "http://127.0.0.1:8181" #${KEYCLOAK_URL}
+        - name: PROXY_ADDRESS_FORWARDING
+          value: "true"
+        - name: DB_VENDOR
+          value: mysql
+        - name: DB_ADDR
+          value: keycloak-db
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_DATABASE
+          value: "KEYCLOAK_MYSQL_DATABASE" #${KEYCLOAK_MYSQL_DATABASE}
+        - name: DB_USER
+          value: "root" #${KEYCLOAK_MYSQL_USER}
+        - name: DB_PASSWORD
+          value: "KEYCLOAK_MYSQL_ROOT_PASSWORD" #${KEYCLOAK_MYSQL_PASSWORD}  
+        ports:
+        - containerPort: 8181
+          hostPort: 8181
+      requirements:
+      - host: keycloak-node
+      - volume:
+          node: keycloak-conf-volume
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /opt/jboss/keycloak/imports
+    keycloak-conf-volume:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/conf #- ./conf:/opt/jboss/keycloak/imports:ro
+    #keycloak database
+    keycloak-db:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: mysql:5.5
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "KEYCLOAK_MYSQL_ROOT_PASSWORD" #${KEYCLOAK_MYSQL_ROOT_PASSWORD}
+        - name: MYSQL_DATABASE
+          value: "KEYCLOAK_MYSQL_DATABASE" #${KEYCLOAK_MYSQL_DATABASE}
+        - name: MYSQL_USER
+          value: "KEYCLOAK_MYSQL_USER" #${KEYCLOAK_MYSQL_USER}
+        - name: MYSQL_PASSWORD
+          value: "KEYCLOAK_MYSQL_PASSWORD" #${KEYCLOAK_MYSQL_PASSWORD}      
+        livenessProbe:
+          exec:
+            command:
+              - /bin/bash
+              - -c
+              - mysql --database=$$MYSQL_DATABASE --password=$$MYSQL_ROOT_PASSWORD --execute="SELECT count(table_name) > 0 FROM information_schema.tables;" --skip-column-names -B
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        ports:
+        - port: 3306
+      requirements:
+      - host: keycloak-node
+      - volume:
+          node: keycloak-mysql-volume
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /var/lib/mysql
+    keycloak-mysql-volume:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/data/keycloak-db #- ./data/keycloak-db:/var/lib/mysql
+    #MiCADO worker node
+    keycloak-node: #AWS
+      type: tosca.nodes.MiCADO.Azure.Compute
+      properties:
+        resource_group: dimitris
+        virtual_network: dimitris-vnet
+        subnet: default
+        network_security_group:  dimitris-micado-nsg
+        image_sku: 18.04-LTS
+        public_key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCPCXqOftFuM6UCDlUadUsrkgLcQtL1+JcFKZGQhIxD/ywEnYGGhQ/YyneCcI8h2Htbqk3UUh7JCfdgedlSJfivO7l9KM7uUFKUB2h0uD4lXfWUM2R/Ul5MkfF1dy93vW4qAvclWD2BvfNULuGEut/vO+Faz8Hg2s1Evr2zT7mTu7Eqqz3Em9tlqYGqnoM3vvyM0JM1SY9BA2O5Vcqruodu6e2TPNQRl4lkgHaImuyJG98Jd6J88em/CerGQTZELdsREQf2iAhUNyRCl8tfgKzwKmJf8qEoG1pGL5hXvRWcRudP+98aQfR+fcRPvFN0+ghd9PlKyBqCuN4IOiivOEMHafa89XTVqNwZHYQ9fG3Y/ntOFtyUI60oT4sRGZawae87E02qKakZsXzl5a2kHch0snVgSbsEJYaD4EB1r548DpCnVwi4v6w203Hi+7898mY7RgNUFjSOueNbzwnrX85rvn94695PlarkU6/wBgQLFgtYlJ8/S3DSbOjGvjfSdAE=
+        size: Standard_B1ms
+      interfaces:
+        Terraform:
+          create:
+      
+  policies:
+    - monitoring:
+        type: tosca.policies.Monitoring.MiCADO
+        properties:
+          enable_container_metrics: true
+          enable_node_metrics: true
