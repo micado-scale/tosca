@@ -10,7 +10,6 @@ description: ADT for KeyTray component in ASCLEPIOS on EC2
 
 topology_template:
   node_templates:
-    #keytray database
     keytray-db:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
@@ -36,15 +35,17 @@ topology_template:
             type: tosca.relationships.AttachesTo
             properties:
               location: /docker-entrypoint-initdb.d
+              
     keytray-mysql-volume:
       type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
         path: /var/lib/data/keytray-db #- ./data/keytray-db:/var/lib/mysql
+        
     keytray-mysql-config-volume:
       type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
         path: /var/lib/conf #- ./conf/keytray.sql:/docker-entrypoint-initdb.d/keytray.sql:ro
-    #key tray server
+        
     keytray:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
@@ -93,27 +94,27 @@ topology_template:
             type: tosca.relationships.AttachesTo
             properties:
               location: /keytray
+              
     keytray-config-volume:
       type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
         path: /var/lib/conf/certs/common/ # - ./conf/certs/common/common-truststore.p12:/keytray/truststore-client.p12
 
-    #MiCADO worker node
-    keytray-node: #AWS
+    keytray-node: 
       type: tosca.nodes.MiCADO.EC2.Compute
       properties:
-        region_name: eu-west-2
-        image_id: ami-0194c3e07668a7e36
-        instance_type: t2.medium
-        key_name: Dimitris-key
+        region_name: ADD_YOUR_REGION_NAME_HERE (e.g. eu-west-2)
+        image_id: ADD_YOUR_IMAGE_ID_HERE (e.g. ami-0194c3e07668a7e36)
+        instance_type: ADD_YOUR_INSTANCE_TYPE_HERE (e.g. t2.medium)
+        key_name: ADD_YOUR_KEY_NAME_HERE (e.g. my_ssh_key)
         security_group_ids:
-          - sg-075395b33ac05ee99
+          - ADD_YOUR_SECURITY_GROUP_ID_HERE (e.g. sg-0aa9937e5c34185bc)
       interfaces:
         # TERRAFORM: Change key to Terraform
         Occopus:
           create:
             inputs:
-              endpoint: https://ec2.eu-west-2.amazonaws.com
+              endpoint: ADD_YOUR_ENDPOINT (e.g. https://ec2.eu-west-2.amazonaws.com)
       
   policies:
     - monitoring:
