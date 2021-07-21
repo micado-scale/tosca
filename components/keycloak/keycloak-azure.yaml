@@ -10,7 +10,6 @@ description: ADT for ABAC component in ASCLEPIOS on EC2
 
 topology_template:
   node_templates:
-    #keycloak server
     keycloak:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
@@ -51,11 +50,12 @@ topology_template:
             type: tosca.relationships.AttachesTo
             properties:
               location: /opt/jboss/keycloak/imports
+              
     keycloak-conf-volume:
       type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
         path: /var/lib/conf #- ./conf:/opt/jboss/keycloak/imports:ro
-    #keycloak database
+        
     keycloak-db:
       type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
@@ -87,21 +87,22 @@ topology_template:
             type: tosca.relationships.AttachesTo
             properties:
               location: /var/lib/mysql
+              
     keycloak-mysql-volume:
       type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
         path: /var/lib/data/keycloak-db #- ./data/keycloak-db:/var/lib/mysql
-    #MiCADO worker node
-    keycloak-node: #AWS
+        
+    keycloak-node:
       type: tosca.nodes.MiCADO.Azure.Compute
       properties:
-        resource_group: dimitris
-        virtual_network: dimitris-vnet
-        subnet: default
-        network_security_group:  dimitris-micado-nsg
-        image_sku: 18.04-LTS
-        public_key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCPCXqOftFuM6UCDlUadUsrkgLcQtL1+JcFKZGQhIxD/ywEnYGGhQ/YyneCcI8h2Htbqk3UUh7JCfdgedlSJfivO7l9KM7uUFKUB2h0uD4lXfWUM2R/Ul5MkfF1dy93vW4qAvclWD2BvfNULuGEut/vO+Faz8Hg2s1Evr2zT7mTu7Eqqz3Em9tlqYGqnoM3vvyM0JM1SY9BA2O5Vcqruodu6e2TPNQRl4lkgHaImuyJG98Jd6J88em/CerGQTZELdsREQf2iAhUNyRCl8tfgKzwKmJf8qEoG1pGL5hXvRWcRudP+98aQfR+fcRPvFN0+ghd9PlKyBqCuN4IOiivOEMHafa89XTVqNwZHYQ9fG3Y/ntOFtyUI60oT4sRGZawae87E02qKakZsXzl5a2kHch0snVgSbsEJYaD4EB1r548DpCnVwi4v6w203Hi+7898mY7RgNUFjSOueNbzwnrX85rvn94695PlarkU6/wBgQLFgtYlJ8/S3DSbOjGvjfSdAE=
-        size: Standard_B1ms
+        resource_group: <RESOURCE_GROUP_NAME> (e.g. test-rg)
+         virtual_network: <VIRTUAL_NETWORK_NAME> (e.g. test-rg-vnet)
+         subnet: <SUBNET_NAME> (e.g. default)
+         network_security_group: (e.g. micado-worker-nsg)
+         image_sku: <UBUNTU_VERSION> (e.g. 18.04-LTS)
+         public_key: <PUBLIC_SSH_KEY> (e.g. ssh-rsa AAAB3N...)
+         size: <VM_SIZE> (e.g. Standard_B1ms)
       interfaces:
         Terraform:
           create:
