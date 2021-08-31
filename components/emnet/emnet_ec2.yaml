@@ -1,0 +1,139 @@
+tosca_definitions_version: tosca_simple_yaml_1_2
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/develop/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+description: ADT for EMNET component in ASCLEPIOS on EC2
+
+topology_template:
+  node_templates:
+    emnet-worker:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: registry.gitlab.com/asclepios-project/emnet/emnet-worker:latest
+        env:
+        - name: KAFKA_URL
+          value: ${KAFKA_URL}
+        - name: COORDINATOR
+          value: ${EMNET_COORDINATOR}
+        - name: NODE_ID
+          value: ${EMNET_NODE_ID}
+        - name: DATA_ANALYTICS_URL
+          value: ${EMNET_DATA_ANALYTICS_URL}
+        - name: KEYSTORE_PASSWORD
+          value: ${EMNET_KEYSTORE_PASSWORD}
+        - name: TRUSTSTORE_PASSWORD
+          value: ${EMNET_TRUSTSTORE_PASSWORD}        
+      requirements:
+      - host: emnet-node
+      - volume:
+          node: emnet-config
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /emnet-worker/resources/
+
+    emnet-config:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/emnet-config
+
+    emnet-data-analytics:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: registry.gitlab.com/asclepios-project/emnet/emnet-data-analytics:latest
+        env:
+        - name: DB_NAME
+          value: ${DB_NAME}
+        - name: DB_USER
+          value: ${DB_USER}
+        - name: DB_USER_PASSWORD
+          value: ${DB_USER_PASSWORD}
+        - name: DB_HOST
+          value: ${DB_HOST}
+        - name: DB_PORT
+          value: ${DB_PORT}
+        - name: EMNET_NODE_ID
+          value: ${EMNET_NODE_ID}
+        - name: EMNET_COORDINATOR_URL
+          value: ${EMNET_COORDINATOR_URL}
+        - name: DATA_ANALYTICS_LOGLEVEL
+          value: ${DATA_ANALYTICS_LOGLEVEL}
+        - name: DATA_ANALYTICS_DEBUG
+          value: ${DATA_ANALYTICS_DEBUG}
+        - name: DATA_ANALYTICS_ALLOWED_HOSTS
+          value: ${DATA_ANALYTICS_ALLOWED_HOSTS}
+        - name: KEYCLOAK_URL
+          value: ${KEYCLOAK_URL}
+        - name: KEYCLOAK_REALM
+          value: ${KEYCLOAK_REALM}
+        - name: KEYCLOAK_CLIENT
+          value: ${DATA_ANALYTICS_KEYCLOAK_CLIENT}
+        - name: KEYCLOAK_SECRET
+          value: ${DATA_ANALYTICS_KEYCLOAK_SECRET} 
+        - name: KEYCLOAK_PUBLIC_CLIENT
+          value: ${DATA_ANALYTICS_KEYCLOAK_PUBLIC_CLIENT}     
+        ports:
+        - containerPort: 8080
+          hostPort: 8080 
+      requirements:
+      - host: emnet-node
+
+    emnet-worker-db:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: mysql/mysql-server:5.7
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: ${DB_ROOT_PASSWORD}
+        - name: MYSQL_DATABASE
+          value: ${DB_NAME}
+        - name: MYSQL_USER
+          value: ${DB_USER}
+        - name: MYSQL_PASSWORD
+          value: ${DB_USER_PASSWORD}       
+        livenessProbe:
+          exec:
+            command:
+              - /usr/bin/mysql --user=root --password=snow --execute \"SHOW DATABASES;\"
+          failureThreshold: 10
+          timeoutSeconds: 20
+      requirements:
+      - host: emnet-node
+      - volume:
+          node: db-scripts
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /docker-entrypoint-initdb.d
+
+    db-scripts:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/data
+
+    emnet-node:
+      type: tosca.nodes.MiCADO.EC2.Compute
+      properties:
+        region_name: ADD_YOUR_REGION_NAME_HERE (e.g. eu-west-2)
+        image_id: ADD_YOUR_IMAGE_ID_HERE (e.g. ami-0194c3e07668a7e36)
+        instance_type: ADD_YOUR_INSTANCE_TYPE_HERE (e.g. t2.small)
+        key_name: ADD_YOUR_KEY_NAME_HERE (e.g. test-key)
+        security_group_ids:
+          - ADD_YOUR_SECURITY_GROUP_ID_HERE (e.g. sg-0aa9937e5c34185bc)
+      interfaces:
+        # TERRAFORM: Change key to Terraform
+        Occopus:
+          create:
+            inputs:
+              endpoint: ADD_YOUR_ENDPOINT (e.g. https://ec2.eu-west-2.amazonaws.com)
+      
+  policies:
+    - monitoring:
+        type: tosca.policies.Monitoring.MiCADO
+        properties:
+          enable_container_metrics: true
+          enable_node_metrics: true

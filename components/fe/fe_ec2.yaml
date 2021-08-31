@@ -1,0 +1,141 @@
+tosca_definitions_version: tosca_simple_yaml_1_2
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/develop/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+description: ADT for FE component in ASCLEPIOS on EC2
+
+topology_template:
+  node_templates:
+    fe-ta:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: registry.gitlab.com/asclepios-project/asclepios-symmetric-mife:latest
+        command:
+        - gunicorn
+        args:
+        - --log-level
+        - DEBUG
+        - --bind
+        - 0.0.0.0:5000
+        - ta:app
+        - --workers=3
+        - --threads=3
+        - --timeout
+        - "1200"
+        env:
+        - name: SERVICE
+          value: ta
+        - name: DEV
+          value: 'true'
+        - name: FLASK_APP
+          value: ta.py
+        - name: EV_URL
+          value: fe-ev:5000
+        - name: DB_NAME
+          value: /data/data.db
+        - name: KEYCLOAK_CALLBACK_URL
+          value: http://localhost:80/
+        - name: ABAC_DISABLED
+          value: 'true' 
+        - name: ABAC_SERVER_HOST
+          value: https://pdp-server:7071
+        - name: ABAC_SERVER_API_KEY
+          value: 7235687126587231675321756752657236156321765723   
+        ports:
+        - containerPort: 5000
+          hostPort: 5010
+      requirements:
+      - host: fe-node
+      - volume:
+          node: fe-ta-data
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /data
+
+    fe-ta-data:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/feta/data
+
+    fe-ev:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: registry.gitlab.com/asclepios-project/asclepios-symmetric-mife:latest
+        command:
+        - gunicorn
+        args:
+        - --log-level
+        - DEBUG
+        - --bind
+        - 0.0.0.0:5000
+        - ev:app
+        - --workers=3
+        - --threads=3
+        - --timeout
+        - "1200"
+        env:
+        - name: SERVICE
+          value: ev
+        - name: DEV
+          value: 'true'
+        - name: FLASK_APP
+          value: ev.py
+        - name: DB_NAME
+          value: pdp-server
+        - name: ABAC_DISABLED
+          value: 'true'
+        - name: ABAC_SERVER_HOST
+          value: https://pdp-server:7071
+        - name: ABAC_SERVER_API_KEY
+          value: 7235687126587231675321756752657236156321765723       
+        ports:
+        - containerPort: 5000
+          hostPort: 5011
+      requirements:
+      - host: fe-node
+      - volume:
+          node: fe-ev-data
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /data
+
+    fe-ev-data:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/feev/data
+
+    redis-fe:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: redis:5.0.7-alpine       
+      requirements:
+      - host: fe-node
+
+    fe-node:
+      type: tosca.nodes.MiCADO.EC2.Compute
+      properties:
+        region_name: ADD_YOUR_REGION_NAME_HERE (e.g. eu-west-2)
+        image_id: ADD_YOUR_IMAGE_ID_HERE (e.g. ami-0194c3e07668a7e36)
+        instance_type: ADD_YOUR_INSTANCE_TYPE_HERE (e.g. t2.small)
+        key_name: ADD_YOUR_KEY_NAME_HERE (e.g. test-key)
+        security_group_ids:
+          - ADD_YOUR_SECURITY_GROUP_ID_HERE (e.g. sg-0aa9937e5c34185bc)
+      interfaces:
+        # TERRAFORM: Change key to Terraform
+        Occopus:
+          create:
+            inputs:
+              endpoint: ADD_YOUR_ENDPOINT (e.g. https://ec2.eu-west-2.amazonaws.com)
+      
+  policies:
+    - monitoring:
+        type: tosca.policies.Monitoring.MiCADO
+        properties:
+          enable_container_metrics: true
+          enable_node_metrics: true

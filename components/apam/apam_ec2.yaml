@@ -1,0 +1,119 @@
+tosca_definitions_version: tosca_simple_yaml_1_2
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/develop/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+description: ADT for APAM component in ASCLEPIOS on EC2
+
+topology_template:
+  node_templates:
+    elasticsearch:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+        env:
+        - name: ES_JAVA_OPTS
+          value: '-Xms2g -Xmx2g'       
+        ports:
+        - containerPort: 9200
+          hostPort: 9200
+        - containerPort: 9300
+          hostPort: 9300
+      requirements:
+      - host: apam-node
+      - volume:
+          node: apam-data
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /usr/share/elasticsearch/data
+
+    apam-data:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/esdata1
+
+    kibana:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: docker.elastic.co/kibana/kibana:7.10.0      
+        ports:
+        - containerPort: 5601
+          hostPort: 5601
+      requirements:
+      - host: apam-node
+
+    logstash:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: registry.gitlab.com/asclepios-project/logstash:latest
+        env:
+        - name: LS_JAVA_OPTS
+          value: '-Xmx1g -Xms1g'
+        - name: JDBC_CONN_STRING
+          value: ${JDBC_CONN_STRING}
+        - name: JDBC_USER
+          value: ${JDBC_USER}
+        - name: JDBC_PASSWORD
+          value: ${JDBC_PASSWORD}        
+        ports:
+        - port: 5044
+          targetPort: 5044
+        - port: 5140
+          targetPort: 5140
+          protocol: 'UDP'
+        - port: 9600
+          targetPort: 9600
+        - port: 5140
+          targetPort: 5140
+          protocol: 'UDP'
+      requirements:
+      - host: apam-node
+      - volume:
+          node: apam-patterns
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /usr/share/logstash/patterns
+      - volume:
+          node: apam-pipeline
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /usr/share/logstash/pipeline/
+
+    apam-patterns:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/logstash/pipeline/
+
+    apam-pipeline:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/logstash/patterns/
+
+    apam-node:
+      type: tosca.nodes.MiCADO.EC2.Compute
+      properties:
+        region_name: ADD_YOUR_REGION_NAME_HERE (e.g. eu-west-2)
+        image_id: ADD_YOUR_IMAGE_ID_HERE (e.g. ami-0194c3e07668a7e36)
+        instance_type: ADD_YOUR_INSTANCE_TYPE_HERE (e.g. t2.small)
+        key_name: ADD_YOUR_KEY_NAME_HERE (e.g. test-key)
+        security_group_ids:
+          - ADD_YOUR_SECURITY_GROUP_ID_HERE (e.g. sg-0aa9937e5c34185bc)
+      interfaces:
+        # TERRAFORM: Change key to Terraform
+        Occopus:
+          create:
+            inputs:
+              endpoint: ADD_YOUR_ENDPOINT (e.g. https://ec2.eu-west-2.amazonaws.com)
+      
+  policies:
+    - monitoring:
+        type: tosca.policies.Monitoring.MiCADO
+        properties:
+          enable_container_metrics: true
+          enable_node_metrics: true

@@ -1,0 +1,82 @@
+tosca_definitions_version: tosca_simple_yaml_1_2
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/develop/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+description: ADT for Ample Editor component in ASCLEPIOS on EC2
+
+topology_template:
+  node_templates:
+    ample-editor:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: registry.gitlab.com/asclepios-project/ample-editor
+        env:
+        - name: ABAC_SERVER_HOST
+          value: pdp-server
+        - name: ABAC_SERVER_API_KEY
+          value: 7235687126587231675321756752657236156321765723       
+        ports:
+        - containerPort: 9090
+          hostPort: 9090
+      requirements:
+      - host: ample-node
+      - volume:
+          node: ample-config
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /ample/conf
+      - volume:
+          node: ample-db
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /ample/DB
+      - volume:
+          node: ample-logs
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /ample/logs
+
+    ample-config:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/ample/conf
+
+    ample-db:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/ample/DB
+
+    ample-logs:
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
+      properties:
+        path: /var/lib/ample/logs
+
+    ample-node:
+      type: tosca.nodes.MiCADO.EC2.Compute
+      properties:
+        region_name: ADD_YOUR_REGION_NAME_HERE (e.g. eu-west-2)
+        image_id: ADD_YOUR_IMAGE_ID_HERE (e.g. ami-0194c3e07668a7e36)
+        instance_type: ADD_YOUR_INSTANCE_TYPE_HERE (e.g. t2.small)
+        key_name: ADD_YOUR_KEY_NAME_HERE (e.g. test-key)
+        security_group_ids:
+          - ADD_YOUR_SECURITY_GROUP_ID_HERE (e.g. sg-0aa9937e5c34185bc)
+      interfaces:
+        # TERRAFORM: Change key to Terraform
+        Occopus:
+          create:
+            inputs:
+              endpoint: ADD_YOUR_ENDPOINT (e.g. https://ec2.eu-west-2.amazonaws.com)
+      
+  policies:
+    - monitoring:
+        type: tosca.policies.Monitoring.MiCADO
+        properties:
+          enable_container_metrics: true
+          enable_node_metrics: true
