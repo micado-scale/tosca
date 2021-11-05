@@ -27,7 +27,7 @@ node_types:
 
   dbs.infrastructure:
     description: DIGITbrain Infrastructure
-    derived_from: tosca.nodes.MiCADO.CloudSigma.Compute
+    derived_from: tosca.nodes.MiCADO.Compute
 
 ## Below you can find some information on the different ways
 ## TOSCA types are used in MiCADO ADTs. Any actual type
