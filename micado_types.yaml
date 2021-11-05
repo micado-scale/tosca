@@ -24,18 +24,10 @@ node_types:
   dbs.microservice:
     description: DIGITbrain Microservices
     derived_from: tosca.nodes.MiCADO.Container.Application.Docker
-    properties:
-      microservice:
-        type: string
-        required: true
 
   dbs.infrastructure:
     description: DIGITbrain Infrastructure
     derived_from: tosca.nodes.MiCADO.CloudSigma.Compute
-    properties:
-      infrastructure:
-        type: string
-        required: true
 
 ## Below you can find some information on the different ways
 ## TOSCA types are used in MiCADO ADTs. Any actual type
