@@ -18,6 +18,25 @@ imports:
 - https://raw.githubusercontent.com/micado-scale/tosca/digitbrain/custom_types/policy/monitoring.yaml
 
 
+
+node_types:
+
+  dbs.microservice:
+    description: DIGITbrain Microservices
+    derived_from: tosca.nodes.Root
+    properties:
+      microservice:
+        type: string
+        required: true
+
+  dbs.infrastructure:
+    description: DIGITbrain Infrastructure
+    derived_from: tosca.nodes.Root
+    properties:
+      infrastructure:
+        type: string
+        required: true
+
 ## Below you can find some information on the different ways
 ## TOSCA types are used in MiCADO ADTs. Any actual type
 ## definitions can be found in the imports above.
