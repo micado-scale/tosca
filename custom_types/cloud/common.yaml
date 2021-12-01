@@ -85,6 +85,10 @@ interface_types:
         description: Cloud provider endpoint API
         type: string
         required: false
+      provider:
+        description: Options for the provider block of a terraform template
+        type: map
+        required: false
     create:
       description: Create a compute node with Terraform
 
