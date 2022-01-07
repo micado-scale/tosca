@@ -2,7 +2,7 @@ tosca_definitions_version: tosca_simple_yaml_1_2
 
 
 imports:
-- common.yaml
+- https://raw.githubusercontent.com/micado-scale/tosca/develop/custom_types/cloud/common.yaml
 
 
 node_types:
