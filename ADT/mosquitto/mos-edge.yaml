@@ -1,0 +1,61 @@
+tosca_definitions_version: tosca_simple_yaml_1_2
+imports:
+- https://raw.githubusercontent.com/micado-scale/tosca/develop/micado_types.yaml
+repositories:
+  docker_hub: https://hub.docker.com/
+description: 'Generated from K8s manifests: k8s-helm-generated.yaml'
+topology_template:
+  node_templates:
+    piedge:
+      type: tosca.nodes.MiCADO.Edge
+      properties:
+        public_ip: [IP OF EDGE]
+
+    mosquitto-configmap:
+      type: tosca.nodes.MiCADO.Container.Config.Kubernetes
+      properties:
+        data:
+          mosquitto.conf: "# Config file for mosquitto\n#\n# See mosquitto.conf(5)\
+            \ for more information.\n#\n# Default values are shown, uncomment\
+            \ to change.\n#\n# Use the # character to indicate a comment, but\
+            \ only if it is the\n# very first character on the line.\nport\
+            \ 8883\ncafile /mosquitto/config/ca.crt\ncertfile\
+            \ /mosquitto/config/server.crt\nkeyfile /mosquitto/config/server.key\nrequire_certificate\
+            \ true\nuse_identity_as_username true\n"
+          ca.crt: [ PLACE YOUR CA CERTIFICATE FILE HERE AS IN THE FOLLOWING FORMAT
+            "-----BEGIN CERTIFICATE-----\nMIIDsTCCApmgAwIBAgIUQps1KLowaA5AMI6hwiQzWzpn+rswDQYJKoZIhvcNAQEL\n\
+            BQAwaDELMAkGA1UEBhMCU0UxEjAQBgNVBAgMCVN0b2NraG9sbTESMBAGA1UEBwwJ\n\
+            ---
+            ---
+            ---
+            WtLOuMxQar6/RnoNIs64zirKnFcQxQ1h+4I8bIyRIhdmqrfs+Q==\n-----END CERTIFICATE-----\n" ]
+          server.crt: [ PLACE YOUR SERVER CERTICATE FILE HERE AS IN THE FOLLOWING FORMAT 
+            "-----BEGIN CERTIFICATE-----\nMIIDWzCCAkMCFG0xw8yVH3rirbeWGbbKUHQwT77MMA0GCSqGSIb3DQEBCwUAMGgx\n\
+            CzAJBgNVBAYTAlNFMRIwEAYDVQQIDAlTdG9ja2hvbG0xEjAQBgNVBAcMCVN0b2Nr\n\
+            ---
+            ---
+            ---
+            AlyyuhimHP/h9DhJiKpMtG8wi1oT9eeJWcHPbDXXAqd0/6gD4jl8rEBI+xCJHyI=\n-----END CERTIFICATE-----\n" ]
+          server.key: [ PLACE YOUR KEY HERE AS IN THE FOLLOWING FORMAT 
+            "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDSmuyl/NSxEPnS\n\
+            7JfUQgXTLr2Qvkr8AZghbkVL4iqTXM4PWoohTpnpsIK/xO7Y5TL+mbeRWQCb8dIn\n\
+            ---
+            ---
+            ---
+            SW/5Of3r7PLXPT4/gNNR8Xo=\n-----END PRIVATE KEY-----\n" ]
+    mosquitto-service:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: eclipse-mosquitto
+        ports:
+        - containerPort: 8883
+          hostPort: 8883
+      requirements:
+      - host: piedge
+      - volume:
+          node: mosquitto-configmap
+          relationship:
+            type: tosca.relationships.AttachesTo
+            properties:
+              location: /mosquitto/config
+
