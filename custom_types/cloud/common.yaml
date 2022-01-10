@@ -15,7 +15,7 @@ artifact_types:
 capability_types:
 
   tosca.capabilities.Compute:
-  ## This is normative as of v1.1 but is not recognised by OS tosca-parser
+    ## This is normative as of v1.1 but is not recognised by OS tosca-parser
     description: Defining TOSCA compute capabilities
     derived_from: tosca.capabilities.Container
     properties:
@@ -61,8 +61,8 @@ data_types:
       path:
         type: string
         required: false
-      
-        
+
+
 interface_types:
 
   tosca.interfaces.MiCADO.Occopus:

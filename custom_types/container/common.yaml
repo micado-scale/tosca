@@ -86,8 +86,8 @@ data_types:
         type: integer
         required: false
         constraints:
-          - greater_or_equal: 30000
-          - less_or_equal: 32767
+        - greater_or_equal: 30000
+        - less_or_equal: 32767
       port:
         description: Visible port (Kubernetes-style)
         type: integer
@@ -110,7 +110,9 @@ data_types:
 
       # Kubernetes ContainerPort fields
       containerPort:
-        description: Give more info on exposed ports, omitting this does not prevent the port from being exposed (internally)
+        description: |
+          Give more info on exposed ports, omitting this does not
+          prevent the port from being exposed (internally)
         type: integer
         required: false
       hostIP:
@@ -239,18 +241,18 @@ node_types:
       Kubernetes:
         type: tosca.interfaces.MiCADO.Kubernetes
     requirements:
-      - service:
-          capability: tosca.capabilities.Container.Docker
-          node: tosca.nodes.MiCADO.Container.Application.Docker
-          relationship: tosca.relationships.MiCADO.ConnectsTo
-      - container:
-          capability: tosca.capabilities.Container.Docker
-          node: tosca.nodes.MiCADO.Container.Application.Docker
-          relationship: tosca.relationships.HostedOn
-      - host:
-          capability: tosca.capabilities.Compute
-          node: tosca.nodes.MiCADO.Compute
-          relationship: tosca.relationships.HostedOn
+    - service:
+        capability: tosca.capabilities.Container.Docker
+        node: tosca.nodes.MiCADO.Container.Application.Docker
+        relationship: tosca.relationships.MiCADO.ConnectsTo
+    - container:
+        capability: tosca.capabilities.Container.Docker
+        node: tosca.nodes.MiCADO.Container.Application.Docker
+        relationship: tosca.relationships.HostedOn
+    - host:
+        capability: tosca.capabilities.Compute
+        node: tosca.nodes.MiCADO.Compute
+        relationship: tosca.relationships.HostedOn
 
 
   # Node type for Docker application container
@@ -369,7 +371,7 @@ node_types:
       container_name:
         description: the container name *translates to Kubernetes name*
         type: string
-        required : false
+        required: false
       deploy:
         description: supports Swarm-only options of a Compose file
         type: deploy_type
@@ -492,22 +494,22 @@ node_types:
 
     # Outward relationships this node supports
     requirements:
-      - service:
-          capability: tosca.capabilities.Container.Docker
-          node: tosca.nodes.MiCADO.Container.Application.Docker
-          relationship: tosca.relationships.MiCADO.ConnectsTo
-      - container:
-          capability: tosca.capabilities.Container.Docker
-          node: tosca.nodes.MiCADO.Container.Application.Docker
-          relationship: tosca.relationships.HostedOn
-      - host:
-          capability: tosca.capabilities.Compute
-          node: tosca.nodes.MiCADO.Compute
-          relationship: tosca.relationships.HostedOn
-      - volume:
-          capability: tosca.capabilities.Attachment
-          node: tosca.nodes.MiCADO.Container.Volume
-          relationship: tosca.relationships.AttachesTo
+    - service:
+        capability: tosca.capabilities.Container.Docker
+        node: tosca.nodes.MiCADO.Container.Application.Docker
+        relationship: tosca.relationships.MiCADO.ConnectsTo
+    - container:
+        capability: tosca.capabilities.Container.Docker
+        node: tosca.nodes.MiCADO.Container.Application.Docker
+        relationship: tosca.relationships.HostedOn
+    - host:
+        capability: tosca.capabilities.Compute
+        node: tosca.nodes.MiCADO.Compute
+        relationship: tosca.relationships.HostedOn
+    - volume:
+        capability: tosca.capabilities.Attachment
+        node: tosca.nodes.MiCADO.Container.Volume
+        relationship: tosca.relationships.AttachesTo
 
 
   tosca.nodes.MiCADO.Container.Application.Docker.Init:
@@ -519,7 +521,6 @@ node_types:
   tosca.nodes.MiCADO.Container.Config:
     description: The base node type for Container configuration stores
     derived_from: tosca.nodes.Root
-    description: base type for Config files
     properties:
       path:
         type: string
@@ -538,7 +539,6 @@ node_types:
   tosca.nodes.MiCADO.Container.Volume:
     description: The base node for container volumes
     derived_from: tosca.nodes.BlockStorage
-    description: description of a container volume
     properties:
       name:
         type: string

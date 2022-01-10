@@ -26,7 +26,8 @@ policy_types:
 
   tosca.policies.Security.MiCADO.Network.L7Proxy:
     derived_from: tosca.policies.Security.MiCADO.Network
-    description: No protocol enforcement. Apply application-level firewall; can provide TLS control
+    description: |
+     No protocol enforcement. Apply application-level firewall; can provide TLS control
     properties:
       encryption:
         type: boolean
@@ -114,7 +115,8 @@ policy_types:
         required: false
       interval_transfer_noop:
         type: integer
-        description: Interval between two NOOP commands sent to server while waiting for stack proxy results
+        description: |
+          Interval between two NOOP commands sent to server while waiting for stack proxy results
         required: false
       resolve_host:
         type: boolean
@@ -184,7 +186,9 @@ policy_types:
         required: false
       reset_on_close:
         type: boolean
-        description: If connection is terminated without a proxy generated error, send an RST instead of a normal close
+        description: |
+          If connection is terminated without a proxy generated error,
+          send an RST instead of a normal close
         required: false
       permit_unicode_url:
         type: boolean
@@ -290,7 +294,8 @@ policy_types:
         required: false
       permitted_responses:
         type: list
-        description: Normative policy hash for HTTP responses indexed by HTTP method and response code
+        description: |
+          Normative policy hash for HTTP responses indexed by HTTP method and response code
         entry_schema:
           description: dictionary (string/int)
           type: map
@@ -301,7 +306,9 @@ policy_types:
         required: false
       permit_null_response:
         type: boolean
-        description: Permit RFC incompliant responses with headers not terminated by CRLF, and not containing entity body
+        description: |
+          Permit RFC incompliant responses with headers not terminated by CRLF,
+          and not containing entity body
         required: false
       language:
         type: string
@@ -310,7 +317,9 @@ policy_types:
         default: English
       error_silent:
         type: boolean
-        description: Turns off verbose error reporting to HTTP client, making firewall fingerprinting more difficult
+        description: |
+          Turns off verbose error reporting to HTTP client,
+          making firewall fingerprinting more difficult
         required: false
       permitted_requests:
         type: list

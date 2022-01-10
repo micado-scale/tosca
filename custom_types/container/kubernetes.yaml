@@ -1,10 +1,7 @@
 tosca_definitions_version: tosca_simple_yaml_1_2
 
-
 imports:
 - https://raw.githubusercontent.com/micado-scale/tosca/master/custom_types/container/common.yaml
-
-
 
 node_types:
 
@@ -81,18 +78,18 @@ node_types:
       Kubernetes:
         type: tosca.interfaces.MiCADO.Kubernetes
     requirements:
-      - service:
-          capability: tosca.capabilities.Container.Docker
-          node: tosca.nodes.MiCADO.Container.Application.Docker
-          relationship: tosca.relationships.MiCADO.ConnectsTo
-      - container:
-          capability: tosca.capabilities.Container.Docker
-          node: tosca.nodes.MiCADO.Container.Application.Docker
-          relationship: tosca.relationships.HostedOn
-      - host:
-          capability: tosca.capabilities.Compute
-          node: tosca.nodes.MiCADO.Compute
-          relationship: tosca.relationships.HostedOn
+    - service:
+        capability: tosca.capabilities.Container.Docker
+        node: tosca.nodes.MiCADO.Container.Application.Docker
+        relationship: tosca.relationships.MiCADO.ConnectsTo
+    - container:
+        capability: tosca.capabilities.Container.Docker
+        node: tosca.nodes.MiCADO.Container.Application.Docker
+        relationship: tosca.relationships.HostedOn
+    - host:
+        capability: tosca.capabilities.Compute
+        node: tosca.nodes.MiCADO.Compute
+        relationship: tosca.relationships.HostedOn
 
 
   tosca.nodes.MiCADO.Container.Application.Pod.Deployment:
@@ -113,7 +110,6 @@ node_types:
   tosca.nodes.MiCADO.Container.Config.Kubernetes:
     description: An abstraction of the config node for Kubernetes ConfigMaps
     derived_from: tosca.nodes.MiCADO.Container.Config
-    description: base type for Config files
     properties:
       data:
         type: map
@@ -138,7 +134,6 @@ node_types:
   tosca.nodes.MiCADO.Container.Config.ConfigMap:
     description: An abstraction of the config node for Kubernetes ConfigMaps
     derived_from: tosca.nodes.MiCADO.Container.Config
-    description: base type for Config files
     properties:
       data:
         type: map
@@ -163,7 +158,6 @@ node_types:
   tosca.nodes.MiCADO.Container.Volume.EmptyDir:
     description: An abstraction of the volume node for Kubernetes EmptyDir volumes
     derived_from: tosca.nodes.MiCADO.Container.Volume
-    description: description of a Kubernetes HostPath Volume
     capabilities:
       volume:
         type: tosca.capabilities.Attachment
@@ -179,7 +173,6 @@ node_types:
   tosca.nodes.MiCADO.Container.Volume.HostPath:
     description: An abstraction of the volume node for Kubernetes HostPath volumes
     derived_from: tosca.nodes.MiCADO.Container.Volume
-    description: description of a Kubernetes HostPath Volume
     properties:
       path:
         type: string
@@ -200,7 +193,6 @@ node_types:
   tosca.nodes.MiCADO.Container.Volume.Local:
     description: An abstraction of the volume node for Kubernetes Local volumes
     derived_from: tosca.nodes.MiCADO.Container.Volume
-    description: description of a Kubernetes Local Volume
     properties:
       path:
         type: string
@@ -234,7 +226,6 @@ node_types:
   tosca.nodes.MiCADO.Container.Volume.NFS:
     description: An abstraction of the volume node for Kubernetes NFS volumes
     derived_from: tosca.nodes.MiCADO.Container.Volume
-    description: description of a Kubernetes NFS Volume
     properties:
       path:
         type: string
@@ -261,7 +252,6 @@ node_types:
   tosca.nodes.MiCADO.Container.Volume.GlusterFS:
     description: An abstraction of the volume node for Kubernetes GlusterFS volumes
     derived_from: tosca.nodes.MiCADO.Container.Volume
-    description: description of a Kubernetes GFS Volume
     properties:
       path:
         type: string
