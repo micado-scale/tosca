@@ -1,0 +1,17 @@
+---
+extends: default
+
+rules:
+  line-length:
+    max: 100
+    level: warning
+  braces:
+    level: warning
+    max-spaces-inside: 3
+  brackets:
+    level: warning
+    max-spaces-inside: 1
+  indentation:
+    indent-sequences: consistent
+  trailing-spaces: disable
+  document-start: disable
