@@ -106,6 +106,15 @@ imports:
 #   * Swarm node types
 #   * Kubernetes node types
 
+node_types:
+
+  micado.microservice:
+    description: Generic type for MiCADO microservices
+    derived_from: tosca.nodes.MiCADO.Container.Application.Docker
+
+  micado.deployment:
+    description: Generic type for MiCADO "deployments" (i.e. infrastructure)
+    derived_from: tosca.nodes.MiCADO.Compute
 
 # TOSCA Policy Types
 #
