@@ -1,6 +1,6 @@
 tosca_definitions_version: tosca_simple_yaml_1_2
 imports:
-- https://raw.githubusercontent.com/micado-scale/tosca/master/micado_types.yaml
+- https://raw.githubusercontent.com/micado-scale/tosca/main/micado_types.yaml
 repositories:
   docker_hub: https://hub.docker.com/
 description: 'Generated from K8s manifests: k8s-helm-generated.yaml'
