@@ -1,7 +1,7 @@
 tosca_definitions_version: tosca_simple_yaml_1_0
 
 imports:
-  - https://raw.githubusercontent.com/micado-scale/tosca/master/policy/scalability/performance/completion/tosca_policy_scalability_performance_completion.yaml
+  - https://raw.githubusercontent.com/micado-scale/tosca/main/policy/scalability/performance/completion/tosca_policy_scalability_performance_completion.yaml
 policy_types:
   tosca.policies.Scaling.Performance.Completion.Job:
     derived_from: tosca.policies.Scaling.Performance.Completion
