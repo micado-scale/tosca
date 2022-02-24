@@ -320,7 +320,7 @@ node_types:
         type: string
         required: false
       dynamic_domain_name_ids:
-        type: list
+        type: map
         required: false
     interfaces:
       Occopus:
