@@ -1,0 +1,41 @@
+tosca_definitions_version: tosca_simple_yaml_1_2
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/develop/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+description: ADT for ITAINNOVA MS4 co-versatile application on EGI cloud
+
+topology_template:
+  node_templates:
+    itainnova:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: dbs-container-repo.emgora.eu/itainnova-ms4:latest
+        ports:
+        - containerPort: 8080
+          hostPort: 8080
+
+    worker-node:
+      type: tosca.nodes.MiCADO.Nova.Compute
+      properties:
+        auth_url: https://cloud-egi.100percentit.com:5000/v3/
+        project_id: 3d181dc16e654078a9cbbe1a9df6228f
+        image_id: d01d38c4-98aa-4dee-be86-8efa5a4db35a
+        flavor_name: m1.medium
+        network_name: net1
+        key_name: Fill_the_key_name
+        security_groups:
+          - default
+      interfaces:
+        Terraform:
+          create:
+      
+  policies:
+    - monitoring:
+        type: tosca.policies.Monitoring.MiCADO
+        properties:
+          enable_container_metrics: true
+          enable_node_metrics: true
