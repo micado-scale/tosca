@@ -1,0 +1,89 @@
+tosca_definitions_version: tosca_simple_yaml_1_2
+
+imports:
+  - https://raw.githubusercontent.com/micado-scale/tosca/develop/micado_types.yaml
+
+repositories:
+  docker_hub: https://hub.docker.com/
+
+description: ADT for co-versatile application on EC2
+
+topology_template:
+  node_templates:
+    simulator:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: registry.gitlab.cc-asp.fraunhofer.de/iml-oe220/otd-net/otd-net:latest
+        ports:
+        - port: 8080
+
+    excel2otd:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
+      properties:
+        image: registry.gitlab.cc-asp.fraunhofer.de/iml-oe220/otd-net/excel2otd:latest
+        ports:
+        - port: 80
+
+    xlssim:
+      type: tosca.nodes.MiCADO.Kubernetes
+      interfaces:
+        Kubernetes:
+          create:
+            inputs:
+              apiVersion: batch/v1
+              kind: Job
+              metadata:
+                name: xlssim
+              spec:
+                template:
+                  spec:
+                    containers:
+                    - env:
+                      - name: EXCEL2OTD_URL
+                        value: http://excel2otd:80
+                      - name: OTD_SIM_URL
+                        value: http://simulator:8080
+                      image: registry.gitlab.cc-asp.fraunhofer.de/iml-oe220/otd-net/xlssim:latest
+                      name: xlssim
+                      volumeMounts:
+                      - mountPath: /app/input
+                        name: otd-input
+                      - mountPath: /app/output
+                        name: otd-output
+                    restartPolicy: OnFailure
+                    volumes:
+                    - hostPath:
+                        path: /var/lib/input
+                      name: otd-input
+                    - hostPath:
+                        path: /var/lib/output
+                      name: otd-output
+
+    worker-node:
+      type: tosca.nodes.MiCADO.Nova.Compute
+      properties:
+        auth_url: https://cloud-egi.100percentit.com:5000/v3/
+        project_id: 3d181dc16e654078a9cbbe1a9df6228f
+        image_id: d01d38c4-98aa-4dee-be86-8efa5a4db35a
+        flavor_name: m1.medium
+        network_name: net1
+        key_name: Fill_the_key_name
+        security_groups:
+          - default
+        context:
+          append: true
+          cloud_config: |
+            runcmd:
+            - wget https://github.com/ResmiArjun/coversatile/raw/main/iml.tgz
+            - tar -xzf iml.tgz --directory /var/lib/
+            - mkdir -p /var/lib/output
+      interfaces:
+        Terraform:
+          create:
+      
+  policies:
+    - monitoring:
+        type: tosca.policies.Monitoring.MiCADO
+        properties:
+          enable_container_metrics: true
+          enable_node_metrics: true
