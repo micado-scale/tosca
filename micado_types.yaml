@@ -10,12 +10,12 @@ description: |
 
 
 imports:
-- https://raw.githubusercontent.com/micado-scale/tosca/main/custom_types/container/kubernetes.yaml
-- https://raw.githubusercontent.com/micado-scale/tosca/main/custom_types/cloud/occopus.yaml
-- https://raw.githubusercontent.com/micado-scale/tosca/main/custom_types/cloud/terraform.yaml
-- https://raw.githubusercontent.com/micado-scale/tosca/main/custom_types/policy/scaling.yaml
-- https://raw.githubusercontent.com/micado-scale/tosca/main/custom_types/policy/security.yaml
-- https://raw.githubusercontent.com/micado-scale/tosca/main/custom_types/policy/monitoring.yaml
+- https://raw.githubusercontent.com/micado-scale/tosca/feat/conform-unfurl/custom_types/container/kubernetes.yaml
+- https://raw.githubusercontent.com/micado-scale/tosca/feat/conform-unfurl/custom_types/cloud/occopus.yaml
+- https://raw.githubusercontent.com/micado-scale/tosca/feat/conform-unfurl/custom_types/cloud/terraform.yaml
+- https://raw.githubusercontent.com/micado-scale/tosca/feat/conform-unfurl/custom_types/policy/scaling.yaml
+- https://raw.githubusercontent.com/micado-scale/tosca/feat/conform-unfurl/custom_types/policy/security.yaml
+- https://raw.githubusercontent.com/micado-scale/tosca/feat/conform-unfurl/custom_types/policy/monitoring.yaml
 
 
 ## Below you can find some information on the different ways

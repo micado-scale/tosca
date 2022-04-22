@@ -1,10 +1,9 @@
 tosca_definitions_version: tosca_simple_yaml_1_2
 
 imports:
-- https://raw.githubusercontent.com/micado-scale/tosca/main/custom_types/container/common.yaml
+  - https://raw.githubusercontent.com/micado-scale/tosca/feat/conform-unfurl/custom_types/container/common.yaml
 
 node_types:
-
   # This type can be used to define *any* Kubernetes resource
   tosca.nodes.MiCADO.Kubernetes:
     description: Base type for defining custom Kubernetes resources
@@ -13,14 +12,13 @@ node_types:
       Kubernetes:
         type: tosca.interfaces.MiCADO.Kubernetes
 
-
   tosca.nodes.MiCADO.Container.Application.Docker.Deployment:
     description: An abstraction of the Docker container node, creates a Kubernetes Deployment
     derived_from: tosca.nodes.MiCADO.Container.Application.Docker
     artifacts:
       image:
         type: tosca.artifacts.Deployment.Image.Container.Docker
-        file: { get_property: [ SELF, image ] }
+        file: { get_property: [SELF, image] }
         repository: docker_hub
     interfaces:
       Kubernetes:
@@ -32,14 +30,13 @@ node_types:
               strategy:
                 type: Recreate
 
-
   tosca.nodes.MiCADO.Container.Application.Docker.DaemonSet:
     description: An abstraction which creates a Kubernetes DaemonSet
     derived_from: tosca.nodes.MiCADO.Container.Application.Docker
     artifacts:
       image:
         type: tosca.artifacts.Deployment.Image.Container.Docker
-        file: { get_property: [ SELF, image ] }
+        file: { get_property: [SELF, image] }
         repository: docker_hub
     interfaces:
       Kubernetes:
@@ -48,14 +45,13 @@ node_types:
           inputs:
             kind: DaemonSet
 
-
   tosca.nodes.MiCADO.Container.Application.Docker.StatefulSet:
     description: An abstraction of the Docker container node, creates a Kubernetes StatefulSet
     derived_from: tosca.nodes.MiCADO.Container.Application.Docker
     artifacts:
       image:
         type: tosca.artifacts.Deployment.Image.Container.Docker
-        file: { get_property: [ SELF, image ] }
+        file: { get_property: [SELF, image] }
         repository: docker_hub
     interfaces:
       Kubernetes:
@@ -68,7 +64,6 @@ node_types:
                 type: RollingUpdate
               podManagementPolicy: Parallel
 
-
   # TODO: Deprecate in favour of ...Container.Application.Pod (common.yaml)
   tosca.nodes.MiCADO.Container.Pod.Kubernetes:
     description: A bare Kubernetes Pod, which supports hosting containers
@@ -78,19 +73,18 @@ node_types:
       Kubernetes:
         type: tosca.interfaces.MiCADO.Kubernetes
     requirements:
-    - service:
-        capability: tosca.capabilities.Container.Docker
-        node: tosca.nodes.MiCADO.Container.Application.Docker
-        relationship: tosca.relationships.MiCADO.ConnectsTo
-    - container:
-        capability: tosca.capabilities.Container.Docker
-        node: tosca.nodes.MiCADO.Container.Application.Docker
-        relationship: tosca.relationships.HostedOn
-    - host:
-        capability: tosca.capabilities.Compute
-        node: tosca.nodes.MiCADO.Compute
-        relationship: tosca.relationships.HostedOn
-
+      - service:
+          capability: tosca.capabilities.Container.Docker
+          node: tosca.nodes.MiCADO.Container.Application.Docker
+          relationship: tosca.relationships.MiCADO.ConnectsTo
+      - container:
+          capability: tosca.capabilities.Container.Docker
+          node: tosca.nodes.MiCADO.Container.Application.Docker
+          relationship: tosca.relationships.HostedOn
+      - host:
+          capability: tosca.capabilities.Compute
+          node: tosca.nodes.MiCADO.Compute
+          relationship: tosca.relationships.HostedOn
 
   tosca.nodes.MiCADO.Container.Application.Pod.Deployment:
     description: An abstraction of a generic Pod, creates a Deployment
@@ -104,7 +98,6 @@ node_types:
             spec:
               strategy:
                 type: Recreate
-
 
   # TODO: Deprecate this in favour of ...Config.ConfigMap
   tosca.nodes.MiCADO.Container.Config.Kubernetes:
@@ -127,9 +120,8 @@ node_types:
         type: tosca.interfaces.MiCADO.Kubernetes
         create:
           inputs:
-            data: { get_property: [ SELF, data ] }
-            binaryData: { get_property: [ SELF, binaryData ] }
-
+            data: { get_property: [SELF, data] }
+            binaryData: { get_property: [SELF, binaryData] }
 
   tosca.nodes.MiCADO.Container.Config.ConfigMap:
     description: An abstraction of the config node for Kubernetes ConfigMaps
@@ -151,9 +143,8 @@ node_types:
         type: tosca.interfaces.MiCADO.Kubernetes
         create:
           inputs:
-            data: { get_property: [ SELF, data ] }
-            binaryData: { get_property: [ SELF, binaryData ] }
-
+            data: { get_property: [SELF, data] }
+            binaryData: { get_property: [SELF, binaryData] }
 
   tosca.nodes.MiCADO.Container.Volume.EmptyDir:
     description: An abstraction of the volume node for Kubernetes EmptyDir volumes
@@ -168,7 +159,6 @@ node_types:
           inputs:
             spec:
               emptyDir: {}
-
 
   tosca.nodes.MiCADO.Container.Volume.HostPath:
     description: An abstraction of the volume node for Kubernetes HostPath volumes
@@ -188,7 +178,7 @@ node_types:
           inputs:
             spec:
               hostPath:
-                path: { get_property: [ SELF, path ] }
+                path: { get_property: [SELF, path] }
 
   tosca.nodes.MiCADO.Container.Volume.Local:
     description: An abstraction of the volume node for Kubernetes Local volumes
@@ -213,15 +203,15 @@ node_types:
             spec:
               volumeMode: Filesystem
               local:
-                path: { get_property: [ SELF, path ] }
+                path: { get_property: [SELF, path] }
               nodeAffinity:
                 required:
                   nodeSelectorTerms:
-                  - matchExpressions:
-                    - key: manual_node
-                      operator: In
-                      values:
-                      - { get_property: [ SELF, node ] }
+                    - matchExpressions:
+                        - key: manual_node
+                          operator: In
+                          values:
+                            - { get_property: [SELF, node] }
 
   tosca.nodes.MiCADO.Container.Volume.NFS:
     description: An abstraction of the volume node for Kubernetes NFS volumes
@@ -245,9 +235,8 @@ node_types:
           inputs:
             spec:
               nfs:
-                path: { get_property: [ SELF, path ] }
-                server: { get_property: [ SELF, server ] }
-
+                path: { get_property: [SELF, path] }
+                server: { get_property: [SELF, server] }
 
   tosca.nodes.MiCADO.Container.Volume.GlusterFS:
     description: An abstraction of the volume node for Kubernetes GlusterFS volumes
@@ -274,6 +263,6 @@ node_types:
           inputs:
             spec:
               glusterfs:
-                path: { get_property: [ SELF, path ] }
-                endpoints: { get_property: [ SELF, endpoints ] }
-                readOnly: { get_property: [ SELF, readOnly ] }
+                path: { get_property: [SELF, path] }
+                endpoints: { get_property: [SELF, endpoints] }
+                readOnly: { get_property: [SELF, readOnly] }
