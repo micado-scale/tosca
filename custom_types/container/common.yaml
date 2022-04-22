@@ -579,3 +579,13 @@ relationship_types:
         type: string
         description: Name of Docker network to connect containers over
         required: true
+
+  # We patch this relationship because location is not required (we can infer it)
+  tosca.relationships.AttachesTo:
+    description: used to attach volumes to containers
+    derived_from: tosca.relationships.AttachesTo
+    properties:
+      location:
+        type: string
+        description: Mount point inside container. Defaults to volume path
+        required: false
