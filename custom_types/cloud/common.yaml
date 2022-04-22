@@ -111,7 +111,7 @@ node_types:
 
   tosca.nodes.MiCADO.Compute:
     description: Base compute node for MiCADO
-    derived_from: tosca.nodes.Compute
+    derived_from: tosca.nodes.Root
     properties:
       context:
         type: context_type
