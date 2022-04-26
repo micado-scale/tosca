@@ -19,6 +19,6 @@ jobs:
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: micado_types.tar
-        asset_name: MiCADO Types for CSARs
+        asset_name: micado_types.tar
         tag: ${{ github.ref }}
         overwrite: true
