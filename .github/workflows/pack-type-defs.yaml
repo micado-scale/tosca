@@ -1,0 +1,24 @@
+name: Package Type Definitions
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Create and publish asset
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Create tarball
+      run: bash flatpack-script.sh
+    - name: Upload tarball as release asset
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: micado_types.tar
+        asset_name: MiCADO Types for CSARs
+        tag: ${{ github.ref }}
+        overwrite: true
