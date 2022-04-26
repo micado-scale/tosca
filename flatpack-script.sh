@@ -3,6 +3,7 @@ echo "Flattening directory structure and formatting imports..."
 format_imports() {
 	yq -i '.imports[] |= sub(".*custom_types/", "")' $1
 	yq -i '.imports[] |= sub("/", "_")' $1
+	yq -i 'del(.imports | select(length==0))' $1
 }
 tmpdir=$PWD/flatpack_tmp
 export -f format_imports
