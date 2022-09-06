@@ -319,6 +319,9 @@ node_types:
       infrastructure_component_id:
         type: string
         required: false
+      dynamic_domain_name:
+        type: string
+        required: false
       dynamic_domain_name_ids:
         type: list
         required: false
