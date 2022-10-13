@@ -101,6 +101,17 @@ node_types:
     properties:
       public_ip:
         type: string
+        required: true
+      ssh_username:
+        type: string
+        default: ubuntu
+        required: false
+      ssh_private_key:
+        type: string
+        required: false
+      ssh_tunnel:
+        type: boolean
+        default: false
         required: false
     capabilities:
       host:
