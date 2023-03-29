@@ -63,6 +63,10 @@ node_types:
         create:
           inputs:
             kind: Job
+            spec:
+              template:
+                spec:
+                  restartPolicy: OnFailure
 
 
   tosca.nodes.MiCADO.Container.Application.Docker.StatefulSet:
