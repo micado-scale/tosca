@@ -336,8 +336,8 @@ node_types:
       dynamic_domain_name:
         type: string
         required: false
-      dynamic_domain_name_ids:
-        type: list
+      dynamic_domain_name_id:
+        type: string
         required: false
     interfaces:
       Occopus:
