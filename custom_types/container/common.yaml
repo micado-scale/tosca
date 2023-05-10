@@ -105,7 +105,7 @@ data_types:
           - 'SCTP'
       targetPort:
         description: Port inside container (Kubernetes-style)
-        type: string
+        type: integer
         required: false
 
       # Kubernetes ContainerPort fields
