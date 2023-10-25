@@ -405,6 +405,13 @@ node_types:
       config_drive:
         type: boolean
         required: false
+      volume_size:
+        type: integer
+        required: false
+      volume_persist:
+        type: boolean
+        required: false
+        
     interfaces:
       Occopus:
         type: tosca.interfaces.MiCADO.Occopus
