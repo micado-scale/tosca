@@ -3,28 +3,22 @@ tosca_definitions_version: tosca_simple_yaml_1_0
 imports:
   - https://raw.githubusercontent.com/micado-scale/tosca/v0.x.2/micado_types.yaml
 
-repositories:
-  docker_hub: https://hub.docker.com/
 
 topology_template:
   node_templates:
     nginxapp:
       type: tosca.nodes.MiCADO.Container.Application.Docker
       properties:
+         image: nginx
          ports: ## ports to be open on the container
            - target: "8080"
              type: NodePort
            - target: "9300"
-      artifacts:
-       image:
-         type: tosca.artifacts.Deployment.Image.Container.Docker
-         file: YOUR_APPLICATION_IMAGE_NAME (eg: lorel/docker-stress-ng)
-         repository: REPOSITORY_WHERE_APPLICATION_IS_LOCATED (eg: docker_hub)
       interfaces:
         Kubernetes:
           create:
             implementation: Deployment
-            inputs: ###Different parameter that will be passed to the Komposed file here is few examples
+            inputs: 
               resources:
                 requests:
                   cpu: "200m"

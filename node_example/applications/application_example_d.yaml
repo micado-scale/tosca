@@ -3,29 +3,22 @@ tosca_definitions_version: tosca_simple_yaml_1_0
 imports:
   - https://raw.githubusercontent.com/micado-scale/tosca/v0.x.2/micado_types.yaml
 
-repositories:
-  docker_hub: https://hub.docker.com/
-
 topology_template:
   node_templates:
     nfs-server-pod:
       type: tosca.nodes.MiCADO.Container.Application.Docker
       properties:
-         clusterIP: 10.96.0.240
-         ports: ## ports to be open on the container
-           - target: 2049
-           - target: 111
-             protocol: udp
-      artifacts:
-       image:
-         type: tosca.artifacts.Deployment.Image.Container.Docker
-         file: YOUR_APPLICATION_IMAGE_NAME (eg: lorel/docker-stress-ng)
-         repository: REPOSITORY_WHERE_APPLICATION_IS_LOCATED (eg: docker_hub)
+        image: micado-app-repo/nfs-server
+        clusterIP: 10.96.0.240
+        ports: ## ports to be open on the container
+          - target: 2049
+          - target: 111
+            protocol: udp
       interfaces:
         Kubernetes:
           create:
             implementation: Deployment
-            inputs: ###Different parameter that will be passed to the Komposed file here is few examples
+            inputs: 
               name: nfs-server-container
               metadata:
                 labels:
@@ -40,14 +33,13 @@ topology_template:
     wordpress-mysql:
       type: tosca.nodes.MiCADO.Container.Application.Docker
       properties:
-         clusterIP: None
-         ports: ## ports to be open on the container 
-           - target: 3306
-      artifacts:
-       image:
-         type: tosca.artifacts.Deployment.Image.Container.Docker
-         file: YOUR_APPLICATION_IMAGE_NAME (eg: lorel/docker-stress-ng)
-         repository: REPOSITORY_WHERE_APPLICATION_IS_LOCATED (eg: docker_hub)
+        image: mysql
+        clusterIP: None
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: admin
+        - name: MYSQL_DATABASE
+          value: wordpress
       requirements:
         - volume:
             node: nfs-volume
@@ -61,11 +53,6 @@ topology_template:
             implementation: Deployment
             inputs: ###Different parameter that will be passed to the Komposed file here is few examples
               name: mysql
-              env:
-              - name: MYSQL_ROOT_PASSWORD
-                value: admin
-              - name: MYSQL_DATABASE
-                value: wordpress
               metadata:
                 labels:
                   app: wordpress
@@ -91,15 +78,18 @@ topology_template:
     wordpress:
       type: tosca.nodes.MiCADO.Container.Application.Docker
       properties:
-         ports: ## ports to be open on the container
-           - target: 80
-             nodePort: 30010
-             type: NodePort
-      artifacts:
-       image:
-         type: tosca.artifacts.Deployment.Image.Container.Docker
-         file: YOUR_APPLICATION_IMAGE_NAME (eg: lorel/docker-stress-ng)
-         repository: REPOSITORY_WHERE_APPLICATION_IS_LOCATED (eg: docker_hub)
+        image: mysql
+        env:
+        - name: MYSQL_DB_HOST
+          value: wordpress-mysql
+        - name: MYSQL_DB_PASSWORD
+          value: admin
+        ports: ## ports to be open on the container
+          - target: 80
+            nodePort: 30010
+            type: NodePort
+          - containerPort: 80
+            name: wordpress
       requirements:
         - volume:
             node: nfs-volume
@@ -113,18 +103,10 @@ topology_template:
             implementation: Deployment
             inputs: ###Different parameter that will be passed to the Komposed file here is few examples
               name: wordpress
-              env:
-              - name: MYSQL_DB_HOST
-                value: wordpress-mysql
-              - name: MYSQL_DB_PASSWORD
-                value: admin
               metadata:
                 labels:
                   app: wordpress
                   tier: frontend
-              ports:
-              - containerPort: 80
-                name: wordpress
               strategy:
                 type: Recreate
               resources:
