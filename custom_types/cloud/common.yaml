@@ -411,6 +411,21 @@ node_types:
       volume_persist:
         type: boolean
         required: false
+      source_type:
+        type: string
+        required: false
+      destination_type:
+        type: string
+        required: false
+      volume_size:
+        type: integer
+        required: false
+      boot_index:
+        type: integer
+        required: false
+      delete_on_termination:
+        type: boolean
+        required: false
         
     interfaces:
       Occopus:
